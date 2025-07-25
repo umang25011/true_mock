@@ -1,0 +1,15 @@
+annotated-types==0.7.0
+Faker==37.4.2
+numpy==2.3.1
+pandas==2.3.1
+psycopg2-binary==2.9.10
+pydantic==2.11.7
+pydantic_core==2.33.2
+python-dateutil==2.9.0.post0
+python-dotenv==1.1.1
+pytz==2025.2
+six==1.17.0
+SQLAlchemy==2.0.41
+typing-inspection==0.4.1
+typing_extensions==4.14.1
+tzdata==2025.2

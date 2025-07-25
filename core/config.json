@@ -1,0 +1,11 @@
+{
+  "database": {
+    "type": "postgresql",
+    "host": "localhost",
+    "port": 5432,
+    "database": "employees",
+    "username": "postgres",
+    "password": "password",
+    "schema": "employees"
+  }
+} 
