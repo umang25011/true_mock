@@ -3,12 +3,19 @@ Model generator that creates Python table models from database tables.
 """
 
 import os
-from typing import Dict, Any, List, Tuple
+from typing import Dict, Any, List, Tuple, Set
 from datetime import datetime, timedelta
 import random
 import inflection
 from faker import Faker
 from sqlalchemy import inspect
+from jinja2 import Environment, FileSystemLoader
+
+from .relations import (
+    RelationType, RelationConfig, Relation,
+    OneToOneRelation, OneToManyRelation, ManyToOneRelation, ManyToManyRelation
+)
+from .columns import Column
 
 fake = Faker()
 
@@ -36,10 +43,18 @@ class ModelGenerator:
         self.db_ops = db_ops
         self.output_dir = "models"
         
+        # Set up Jinja2 environment
+        template_dir = os.path.join(os.path.dirname(__file__), 'templates')
+        self.jinja_env = Environment(
+            loader=FileSystemLoader(template_dir),
+            trim_blocks=True,
+            lstrip_blocks=True
+        )
+        
         # Create output directory if it doesn't exist
         if not os.path.exists(self.output_dir):
             os.makedirs(self.output_dir)
-    
+
     def _is_auto_incrementing(self, table_name: str, column_info: Dict[str, Any]) -> bool:
         """Check if a column is auto-incrementing (serial)."""
         # Get the raw column info from SQLAlchemy inspector
@@ -60,8 +75,13 @@ class ModelGenerator:
                 return is_serial
         return False
 
-    def _get_column_type_and_args(self, table_name: str, column_name: str, column_info: Dict[str, Any]) -> Tuple[str, List[str]]:
-        """Determine the appropriate column type and arguments."""
+    def _get_column_type_and_args(
+        self,
+        table_name: str,
+        column_name: str,
+        column_info: Dict[str, Any]
+    ) -> Tuple[str, List[str]]:
+        """Get column type and arguments for template."""
         name_lower = column_name.lower()
         type_lower = str(column_info['type']).lower()
         args = []
@@ -221,79 +241,162 @@ class ModelGenerator:
             *args,
             'generator=lambda: fake.text(max_nb_chars=50)'
         ]
-    
+
+    def _detect_relationship_type(
+        self, 
+        inspector, 
+        table_name: str,
+        fk_info: Dict[str, Any],
+        schema: str
+    ) -> RelationType:
+        """Detect the type of relationship based on database constraints."""
+        referred_table = fk_info['referred_table']
+        
+        # Get constraints for both tables
+        constraints_from = inspector.get_unique_constraints(table_name, schema=schema)
+        pk_from = inspector.get_pk_constraint(table_name, schema=schema)
+        fks_to = inspector.get_foreign_keys(referred_table, schema=schema)
+        
+        # Check if the foreign key column is unique
+        fk_columns = fk_info['constrained_columns']
+        is_unique = any(
+            set(fk_columns) == set(const['column_names'])
+            for const in constraints_from
+        ) or set(fk_columns) == set(pk_from.get('constrained_columns', []))
+        
+        # Check for reverse relationships
+        has_reverse_relation = any(
+            fk['referred_table'] == table_name
+            for fk in fks_to
+        )
+        
+        if is_unique:
+            return RelationType.ONE_TO_ONE
+        elif has_reverse_relation:
+            # Check if it's many-to-many through a junction table
+            if len(fk_info['constrained_columns']) > 1:
+                return RelationType.MANY_TO_MANY
+            else:
+                return RelationType.ONE_TO_MANY
+        else:
+            return RelationType.MANY_TO_ONE
+
+    def _analyze_relationships(self, table_name: str) -> List[Relation]:
+        """Analyze and return all relationships for a table."""
+        relationships = []
+        inspector = inspect(self.db_ops.db.get_engine())
+        schema = self.db_ops.db.get_schema()
+        
+        foreign_keys = inspector.get_foreign_keys(table_name, schema=schema)
+        
+        for fk in foreign_keys:
+            rel_type = self._detect_relationship_type(inspector, table_name, fk, schema)
+            config = RelationConfig()  # Use default config with auto_generate=True
+            
+            # Create appropriate relation instance based on type
+            if rel_type == RelationType.ONE_TO_ONE:
+                relation = OneToOneRelation(
+                    from_table=table_name,
+                    to_table=fk['referred_table'],
+                    from_column=fk['constrained_columns'][0],
+                    to_column=fk['referred_columns'][0],
+                    config=config
+                )
+            elif rel_type == RelationType.MANY_TO_ONE:
+                relation = ManyToOneRelation(
+                    from_table=table_name,
+                    to_table=fk['referred_table'],
+                    from_column=fk['constrained_columns'][0],
+                    to_column=fk['referred_columns'][0],
+                    config=config
+                )
+            elif rel_type == RelationType.ONE_TO_MANY:
+                relation = OneToManyRelation(
+                    from_table=table_name,
+                    to_table=fk['referred_table'],
+                    from_column=fk['constrained_columns'][0],
+                    to_column=fk['referred_columns'][0],
+                    config=config
+                )
+            elif rel_type == RelationType.MANY_TO_MANY:
+                relation = ManyToManyRelation(
+                    from_table=table_name,
+                    to_table=fk['referred_table'],
+                    junction_table=table_name,  # Current table is the junction
+                    from_column=fk['constrained_columns'][0],
+                    to_column=fk['referred_columns'][0],
+                    config=config
+                )
+            
+            relationships.append(relation)
+        
+        return relationships
+
+    def _get_column_definition(
+        self,
+        table_name: str,
+        column_name: str,
+        column_info: Dict[str, Any]
+    ) -> Column:
+        """Get column definition for template."""
+        column_type, args = self._get_column_type_and_args(table_name, column_name, column_info)
+        return Column(
+            name=column_name,
+            type=column_type,
+            args=args
+        )
+
     def generate_model_code(self, table_name: str) -> str:
         """Generate Python code for a table model."""
         schema = self.db_ops.get_table_schema(table_name)
+        relationships = self._analyze_relationships(table_name)
         class_name = inflection.camelize(table_name) + 'Table'
         
         # Track needed imports
-        needed_imports = {
-            'datetime': ['datetime', 'timedelta'],
-            'random': ['random'],
-            'faker': ['Faker'],
-            'core': set()
+        imports = {
+            'datetime': set(),
+            'random': False,
+            'faker': False,
+            'core': set(),
+            'relations': set()
         }
         
         # Generate column definitions
-        column_defs = []
+        columns = []
         for col in schema['columns']:
             column_type, args = self._get_column_type_and_args(table_name, col['name'], col)
-            needed_imports['core'].add(column_type)
+            columns.append({
+                'name': col['name'],
+                'type': column_type,
+                'args': args
+            })
             
-            if args:
-                column_defs.append(
-                    f"            '{col['name']}': {column_type}(\n" +
-                    ",\n".join(f"                {arg}" for arg in args) +
-                    "\n            )"
-                )
-            else:
-                column_defs.append(f"            '{col['name']}': {column_type}()")
+            # Track imports based on column types and generators
+            imports['core'].add(column_type)
+            
+            # Check for specific imports needed
+            if any('datetime' in arg or 'timedelta' in arg for arg in args):
+                imports['datetime'].update(['datetime', 'timedelta'])
+            if any('random.' in arg for arg in args):
+                imports['random'] = True
+            if any('fake.' in arg for arg in args):
+                imports['faker'] = True
         
-        # Join column definitions with commas
-        column_defs_str = ",\n".join(column_defs)
+        # Add relation imports if needed
+        if relationships:
+            imports['relations'].update(['Relation', 'RelationConfig'])
+            for rel in relationships:
+                imports['relations'].add(rel.__class__.__name__)
         
-        # Generate the code
-        imports = [
-            '"""',
-            f'Table model for {table_name} table.',
-            'Generated automatically by sql_data_generator.',
-            '"""',
-            ''
-        ]
-
-        # Standard library imports first
-        if needed_imports['datetime']:
-            imports.append(f"from datetime import {', '.join(needed_imports['datetime'])}")
-        if needed_imports['random']:
-            imports.append('import random')
-        
-        # Third-party imports
-        if needed_imports['faker']:
-            imports.append('from faker import Faker')
-            imports.append('')
-            imports.append('fake = Faker()')
-        
-        # Local imports
-        imports.extend([
-            '',
-            'from core import TableModel',
-            'from core import (' + 
-            ', '.join(sorted(needed_imports['core'])) + ')',
-            '',
-            '',
-            f'class {class_name}(TableModel):',
-            f'    """Model for {table_name} table."""',
-            '',
-            '    def _setup_columns(self):',
-            '        """Define the table columns."""',
-            '        self.columns = {',
-            column_defs_str,
-            '        }',
-            ''
-        ])
-        
-        return '\n'.join(imports)
+        # Render template
+        template = self.jinja_env.get_template('model.py.jinja')
+        return template.render(
+            table_name=table_name,
+            class_name=class_name,
+            imports=imports,
+            columns=columns,
+            relations=relationships
+        )
     
     def save_model(self, table_name: str) -> str:
         """Generate and save a model file for a table."""

@@ -4,35 +4,20 @@ Base table model for data generation.
 
 import json
 import os
-from typing import Dict, List, Any
+from typing import Dict, List, Any, Optional
 import logging
+from .relations import ModelRegistry, Relation
 
 class TableModel:
     """Base class for table models."""
     
-    def __init__(self, rows_per_table: int = None, batch_size: int = None):
-        """Initialize table model with configuration."""
+    def __init__(self):
+        """Initialize table model."""
         self.columns: Dict[str, Any] = {}
-        
-        # Load config
-        config_path = os.path.join(os.path.dirname(__file__), 'config.json')
-        with open(config_path, 'r') as f:
-            self.config = json.load(f)
-        
-        # Set generation parameters
-        self.rows_per_table = rows_per_table or self.config['data_generation']['default_rows_per_table']
-        self.batch_size = batch_size or self.config['data_generation']['default_batch_size']
-        
-        # Set up logging
-        logging.basicConfig(
-            level=self.config['logging']['level'],
-            filename=self.config['logging']['file'],
-            format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
-        )
-        self.logger = logging.getLogger(self.__class__.__name__)
-        
-        # Initialize columns
+        self.relations: List[Relation] = []
+        self.model_registry: Optional[ModelRegistry] = None
         self._setup_columns()
+        self._setup_relations()
     
     def _setup_columns(self):
         """
@@ -44,12 +29,40 @@ class TableModel:
             }
         """
         pass
+
+    def _setup_relations(self):
+        """
+        Override this method to define table relationships.
+        Example:
+            self.relations.append(
+                ManyToOneRelation(
+                    from_table="employee",
+                    to_table="department",
+                    from_column="dept_id",
+                    to_column="id"
+                )
+            )
+        """
+        pass
+    
+    def set_model_registry(self, registry: ModelRegistry):
+        """Set the model registry for relationship handling."""
+        self.model_registry = registry
     
     def generate_row(self) -> Dict[str, Any]:
         """Generate a single row of data."""
         row = {}
+        
+        # First generate values for non-relation columns
         for name, column in self.columns.items():
-            row[name] = column.generate()
+            if not any(name == rel.from_column for rel in self.relations):
+                row[name] = column.generate()
+        
+        # Then handle relationships to ensure referenced data exists
+        if self.model_registry:
+            for relation in self.relations:
+                row[relation.from_column] = relation.generate_related_data(self.model_registry)
+        
         return row
     
     def generate_rows(self, count: int = None) -> List[Dict[str, Any]]:
@@ -69,9 +82,23 @@ class TableModel:
         """String representation showing table structure."""
         lines = [f"Table Model: {self.__class__.__name__}"]
         lines.append("-" * 40)
+        
+        # Show columns
+        lines.append("\nColumns:")
         for name, column in self.columns.items():
             column_type = column.__class__.__name__
             nullable = "NULL" if column.nullable else "NOT NULL"
-            unique = "UNIQUE" if column.unique else ""
+            unique = "UNIQUE" if getattr(column, 'unique', False) else ""
             lines.append(f"{name}: {column_type} {nullable} {unique}")
+        
+        # Show relationships
+        if self.relations:
+            lines.append("\nRelationships:")
+            for rel in self.relations:
+                rel_type = rel.__class__.__name__.replace('Relation', '')
+                lines.append(
+                    f"{rel.from_column} -> {rel.to_table}.{rel.to_column} "
+                    f"({rel_type})"
+                )
+        
         return "\n".join(lines) 
