@@ -17,14 +17,19 @@ class Column:
         self,
         nullable: bool = True,
         unique: bool = False,
-        generator: Optional[Callable[[], Any]] = None
+        generator: Optional[Callable[[], Any]] = None,
+        skip_generation: bool = False
     ):
         self.nullable = nullable
         self.unique = unique
         self.generator = generator
+        self.skip_generation = skip_generation
     
     def generate(self) -> Any:
         """Generate a value for this column."""
+        if self.skip_generation:
+            return None
+            
         if self.nullable and random.random() < 0.1:  # 10% chance of NULL
             return None
         

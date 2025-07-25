@@ -21,20 +21,20 @@ class EmployeeTable(TableModel):
         self.columns = {
             'id': IntegerColumn(
                 nullable=False,
-                min_value=1,
-                max_value=1000000,
-                generator=lambda: random.randint(1, 1000000)
+                skip_generation=True
             ),
             'birth_date': DateTimeColumn(
                 nullable=False,
                 generator=lambda: datetime.now() - timedelta(days=random.randint(365*20, 365*60))
             ),
             'first_name': NameColumn(
+                nullable=False,
                 name_type="first",
                 max_length=14,
                 generator=lambda: fake.first_name()
             ),
             'last_name': NameColumn(
+                nullable=False,
                 name_type="last",
                 max_length=16,
                 generator=lambda: fake.last_name()

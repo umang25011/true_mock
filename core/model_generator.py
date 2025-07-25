@@ -8,6 +8,7 @@ from datetime import datetime, timedelta
 import random
 import inflection
 from faker import Faker
+from sqlalchemy import inspect
 
 fake = Faker()
 
@@ -39,7 +40,27 @@ class ModelGenerator:
         if not os.path.exists(self.output_dir):
             os.makedirs(self.output_dir)
     
-    def _get_column_type_and_args(self, column_name: str, column_info: Dict[str, Any]) -> Tuple[str, List[str]]:
+    def _is_auto_incrementing(self, table_name: str, column_info: Dict[str, Any]) -> bool:
+        """Check if a column is auto-incrementing (serial)."""
+        # Get the raw column info from SQLAlchemy inspector
+        inspector = inspect(self.db_ops.db.get_engine())
+        raw_columns = inspector.get_columns(table_name, schema=self.db_ops.db.get_schema())
+        
+        # Find matching column
+        for raw_col in raw_columns:
+            if raw_col['name'] == column_info['name']:
+                # Check for serial/auto-increment flags
+                # Different databases might use different attributes
+                is_serial = any([
+                    raw_col.get('autoincrement', False),  # SQLAlchemy's autoincrement flag
+                    'serial' in str(raw_col['type']).lower(),  # PostgreSQL serial type
+                    'nextval' in str(raw_col.get('default', '')).lower(),  # PostgreSQL sequence default
+                    raw_col.get('identity', False)  # SQL Server/PostgreSQL identity columns
+                ])
+                return is_serial
+        return False
+
+    def _get_column_type_and_args(self, table_name: str, column_name: str, column_info: Dict[str, Any]) -> Tuple[str, List[str]]:
         """Determine the appropriate column type and arguments."""
         name_lower = column_name.lower()
         type_lower = str(column_info['type']).lower()
@@ -53,8 +74,20 @@ class ModelGenerator:
         if column_info.get('unique', False):
             args.append('unique=True')
 
-        # Special column name handling
-        if 'id' in name_lower or 'key' in name_lower:
+        # Check if this is a primary key and auto-incrementing
+        is_primary = column_info.get('primary_key', False)
+        is_auto_increment = self._is_auto_incrementing(table_name, column_info)
+
+        # For auto-incrementing primary keys, skip value generation
+        if is_primary and is_auto_increment:
+            return 'IntegerColumn', [
+                'nullable=False',
+                'skip_generation=True',  # New flag to skip value generation
+                'generator=None'  # No generator needed
+            ]
+        
+        # Handle other primary keys or ID columns that aren't auto-incrementing
+        elif 'id' in name_lower or 'key' in name_lower:
             return 'IntegerColumn', [
                 'nullable=False',
                 'min_value=1',
@@ -203,7 +236,7 @@ class ModelGenerator:
         # Generate column definitions
         column_defs = []
         for col in schema['columns']:
-            column_type, args = self._get_column_type_and_args(col['name'], col)
+            column_type, args = self._get_column_type_and_args(table_name, col['name'], col)
             needed_imports['core'].add(column_type)
             
             if args:

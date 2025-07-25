@@ -1,4 +1,10 @@
 {
+  "data_generation": {
+    "default_rows_per_table": 10,
+    "default_batch_size": 10,
+    "max_retries": 3,
+    "timeout_seconds": 30
+  },
   "database": {
     "type": "postgresql",
     "host": "localhost",
@@ -6,6 +12,10 @@
     "database": "employees",
     "username": "postgres",
     "password": "password",
-    "schema": "employees"
+    "db_schema": "employees"
+  },
+  "logging": {
+    "level": "INFO",
+    "file": "data_generation.log"
   }
-} 
+}

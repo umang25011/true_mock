@@ -21,7 +21,7 @@ class DatabaseConfig(BaseModel):
     database: str
     username: str
     password: str
-    schema: str = "public"
+    db_schema: str = "public"
 
 
 class Config(BaseModel):
@@ -90,7 +90,7 @@ class DatabaseConnector:
     
     def get_schema(self) -> str:
         """Get the database schema."""
-        return self.config.database.schema
+        return self.config.database.db_schema
     
     def is_connected(self) -> bool:
         """Check if the database is connected."""
