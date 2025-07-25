@@ -21,7 +21,9 @@ class EmployeeTable(TableModel):
         self.columns = {
             'id': IntegerColumn(
                 nullable=False,
-                skip_generation=True
+                min_value=1,
+                max_value=1000000,
+                generator=lambda: random.randint(1, 1000000)
             ),
             'birth_date': DateTimeColumn(
                 nullable=False,

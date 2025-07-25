@@ -97,6 +97,7 @@ class ModelGenerator:
         
         elif any(name in name_lower for name in ['first_name', 'firstname']):
             return 'NameColumn', [
+                'nullable=False',  # Names should never be null
                 'name_type="first"',
                 f'max_length={column_info["type"].length if hasattr(column_info["type"], "length") else 50}',
                 'generator=lambda: fake.first_name()'
@@ -104,6 +105,7 @@ class ModelGenerator:
         
         elif any(name in name_lower for name in ['last_name', 'lastname']):
             return 'NameColumn', [
+                'nullable=False',  # Names should never be null
                 'name_type="last"',
                 f'max_length={column_info["type"].length if hasattr(column_info["type"], "length") else 50}',
                 'generator=lambda: fake.last_name()'
