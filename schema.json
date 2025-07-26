@@ -3,7 +3,7 @@
     "name": "employees",
     "dialect": "postgresql",
     "version": "(17, 5)",
-    "generated_at": "2025-07-26T10:00:28.984045"
+    "generated_at": "2025-07-26T10:56:49.024210"
   },
   "tables": {
     "employee": {
@@ -19,7 +19,11 @@
           },
           "nullable": false,
           "default": "nextval('employees.id_employee_seq'::regclass)",
-          "primary_key": false,
+          "sequence": {
+            "name": "id_employee_seq",
+            "type": "auto_increment"
+          },
+          "primary_key": true,
           "unique": false,
           "auto_increment": true,
           "comment": null,
@@ -45,7 +49,13 @@
               "column": "employee_id",
               "name": "titles_ibfk_1"
             }
-          ]
+          ],
+          "usage": {
+            "is_foreign_key": false,
+            "is_referenced": true,
+            "reference_count": 4,
+            "composite_keys": []
+          }
         },
         {
           "name": "birth_date",
@@ -56,12 +66,19 @@
           },
           "nullable": false,
           "default": null,
+          "sequence": null,
           "primary_key": false,
           "unique": false,
           "auto_increment": false,
           "comment": null,
           "references": [],
-          "referenced_by": []
+          "referenced_by": [],
+          "usage": {
+            "is_foreign_key": false,
+            "is_referenced": false,
+            "reference_count": 0,
+            "composite_keys": []
+          }
         },
         {
           "name": "first_name",
@@ -74,12 +91,19 @@
           },
           "nullable": false,
           "default": null,
+          "sequence": null,
           "primary_key": false,
           "unique": false,
           "auto_increment": false,
           "comment": null,
           "references": [],
-          "referenced_by": []
+          "referenced_by": [],
+          "usage": {
+            "is_foreign_key": false,
+            "is_referenced": false,
+            "reference_count": 0,
+            "composite_keys": []
+          }
         },
         {
           "name": "last_name",
@@ -92,12 +116,19 @@
           },
           "nullable": false,
           "default": null,
+          "sequence": null,
           "primary_key": false,
           "unique": false,
           "auto_increment": false,
           "comment": null,
           "references": [],
-          "referenced_by": []
+          "referenced_by": [],
+          "usage": {
+            "is_foreign_key": false,
+            "is_referenced": false,
+            "reference_count": 0,
+            "composite_keys": []
+          }
         },
         {
           "name": "gender",
@@ -105,17 +136,27 @@
             "python": "ENUM",
             "sql": "VARCHAR(1)",
             "params": {
-              "length": 1
+              "enum_values": [
+                "M",
+                "F"
+              ]
             }
           },
           "nullable": false,
           "default": null,
+          "sequence": null,
           "primary_key": false,
           "unique": false,
           "auto_increment": false,
           "comment": null,
           "references": [],
-          "referenced_by": []
+          "referenced_by": [],
+          "usage": {
+            "is_foreign_key": false,
+            "is_referenced": false,
+            "reference_count": 0,
+            "composite_keys": []
+          }
         },
         {
           "name": "hire_date",
@@ -126,12 +167,19 @@
           },
           "nullable": false,
           "default": null,
+          "sequence": null,
           "primary_key": false,
           "unique": false,
           "auto_increment": false,
           "comment": null,
           "references": [],
-          "referenced_by": []
+          "referenced_by": [],
+          "usage": {
+            "is_foreign_key": false,
+            "is_referenced": false,
+            "reference_count": 0,
+            "composite_keys": []
+          }
         }
       ],
       "indexes": [],
@@ -145,7 +193,18 @@
           ]
         }
       },
-      "comment": null
+      "comment": null,
+      "relationships": {
+        "has_many": [],
+        "belongs_to": [],
+        "has_one": [],
+        "many_to_many": [
+          "department_employee",
+          "department_manager",
+          "salary",
+          "title"
+        ]
+      }
     },
     "department_employee": {
       "name": "department_employee",
@@ -160,7 +219,8 @@
           },
           "nullable": false,
           "default": null,
-          "primary_key": false,
+          "sequence": null,
+          "primary_key": true,
           "unique": false,
           "auto_increment": false,
           "comment": null,
@@ -169,11 +229,27 @@
               "table": "employee",
               "column": "id",
               "name": "dept_emp_ibfk_1",
-              "onupdate": null,
-              "ondelete": null
+              "onupdate": "NO ACTION",
+              "ondelete": "NO ACTION"
             }
           ],
-          "referenced_by": []
+          "referenced_by": [],
+          "usage": {
+            "is_foreign_key": true,
+            "is_referenced": false,
+            "reference_count": 0,
+            "composite_keys": [
+              {
+                "type": "primary_key",
+                "name": "idx_16982_primary",
+                "columns": [
+                  "employee_id",
+                  "department_id"
+                ],
+                "position": 1
+              }
+            ]
+          }
         },
         {
           "name": "department_id",
@@ -186,7 +262,8 @@
           },
           "nullable": false,
           "default": null,
-          "primary_key": false,
+          "sequence": null,
+          "primary_key": true,
           "unique": false,
           "auto_increment": false,
           "comment": null,
@@ -195,11 +272,27 @@
               "table": "department",
               "column": "id",
               "name": "dept_emp_ibfk_2",
-              "onupdate": null,
-              "ondelete": null
+              "onupdate": "NO ACTION",
+              "ondelete": "NO ACTION"
             }
           ],
-          "referenced_by": []
+          "referenced_by": [],
+          "usage": {
+            "is_foreign_key": true,
+            "is_referenced": false,
+            "reference_count": 0,
+            "composite_keys": [
+              {
+                "type": "primary_key",
+                "name": "idx_16982_primary",
+                "columns": [
+                  "employee_id",
+                  "department_id"
+                ],
+                "position": 2
+              }
+            ]
+          }
         },
         {
           "name": "from_date",
@@ -210,12 +303,19 @@
           },
           "nullable": false,
           "default": null,
+          "sequence": null,
           "primary_key": false,
           "unique": false,
           "auto_increment": false,
           "comment": null,
           "references": [],
-          "referenced_by": []
+          "referenced_by": [],
+          "usage": {
+            "is_foreign_key": false,
+            "is_referenced": false,
+            "reference_count": 0,
+            "composite_keys": []
+          }
         },
         {
           "name": "to_date",
@@ -226,12 +326,19 @@
           },
           "nullable": false,
           "default": null,
+          "sequence": null,
           "primary_key": false,
           "unique": false,
           "auto_increment": false,
           "comment": null,
           "references": [],
-          "referenced_by": []
+          "referenced_by": [],
+          "usage": {
+            "is_foreign_key": false,
+            "is_referenced": false,
+            "reference_count": 0,
+            "composite_keys": []
+          }
         }
       ],
       "indexes": [
@@ -241,7 +348,13 @@
             "department_id"
           ],
           "unique": false,
-          "type": "btree"
+          "type": "btree",
+          "usage": {
+            "is_primary": false,
+            "is_unique": false,
+            "is_composite": false,
+            "column_count": 1
+          }
         }
       ],
       "constraints": {
@@ -255,7 +368,16 @@
           ]
         }
       },
-      "comment": null
+      "comment": null,
+      "relationships": {
+        "has_many": [],
+        "belongs_to": [],
+        "has_one": [],
+        "many_to_many": [
+          "employee",
+          "department"
+        ]
+      }
     },
     "department": {
       "name": "department",
@@ -272,7 +394,8 @@
           },
           "nullable": false,
           "default": null,
-          "primary_key": false,
+          "sequence": null,
+          "primary_key": true,
           "unique": false,
           "auto_increment": false,
           "comment": null,
@@ -288,7 +411,13 @@
               "column": "department_id",
               "name": "dept_manager_ibfk_2"
             }
-          ]
+          ],
+          "usage": {
+            "is_foreign_key": false,
+            "is_referenced": true,
+            "reference_count": 2,
+            "composite_keys": []
+          }
         },
         {
           "name": "dept_name",
@@ -301,12 +430,19 @@
           },
           "nullable": false,
           "default": null,
+          "sequence": null,
           "primary_key": false,
           "unique": true,
           "auto_increment": false,
           "comment": null,
           "references": [],
-          "referenced_by": []
+          "referenced_by": [],
+          "usage": {
+            "is_foreign_key": false,
+            "is_referenced": false,
+            "reference_count": 0,
+            "composite_keys": []
+          }
         }
       ],
       "indexes": [
@@ -316,7 +452,13 @@
             "dept_name"
           ],
           "unique": true,
-          "type": "btree"
+          "type": "btree",
+          "usage": {
+            "is_primary": false,
+            "is_unique": true,
+            "is_composite": false,
+            "column_count": 1
+          }
         }
       ],
       "constraints": {
@@ -329,7 +471,16 @@
           ]
         }
       },
-      "comment": null
+      "comment": null,
+      "relationships": {
+        "has_many": [],
+        "belongs_to": [],
+        "has_one": [],
+        "many_to_many": [
+          "department_employee",
+          "department_manager"
+        ]
+      }
     },
     "department_manager": {
       "name": "department_manager",
@@ -344,7 +495,8 @@
           },
           "nullable": false,
           "default": null,
-          "primary_key": false,
+          "sequence": null,
+          "primary_key": true,
           "unique": false,
           "auto_increment": false,
           "comment": null,
@@ -353,11 +505,27 @@
               "table": "employee",
               "column": "id",
               "name": "dept_manager_ibfk_1",
-              "onupdate": null,
-              "ondelete": null
+              "onupdate": "NO ACTION",
+              "ondelete": "NO ACTION"
             }
           ],
-          "referenced_by": []
+          "referenced_by": [],
+          "usage": {
+            "is_foreign_key": true,
+            "is_referenced": false,
+            "reference_count": 0,
+            "composite_keys": [
+              {
+                "type": "primary_key",
+                "name": "idx_16985_primary",
+                "columns": [
+                  "employee_id",
+                  "department_id"
+                ],
+                "position": 1
+              }
+            ]
+          }
         },
         {
           "name": "department_id",
@@ -370,7 +538,8 @@
           },
           "nullable": false,
           "default": null,
-          "primary_key": false,
+          "sequence": null,
+          "primary_key": true,
           "unique": false,
           "auto_increment": false,
           "comment": null,
@@ -379,11 +548,27 @@
               "table": "department",
               "column": "id",
               "name": "dept_manager_ibfk_2",
-              "onupdate": null,
-              "ondelete": null
+              "onupdate": "NO ACTION",
+              "ondelete": "NO ACTION"
             }
           ],
-          "referenced_by": []
+          "referenced_by": [],
+          "usage": {
+            "is_foreign_key": true,
+            "is_referenced": false,
+            "reference_count": 0,
+            "composite_keys": [
+              {
+                "type": "primary_key",
+                "name": "idx_16985_primary",
+                "columns": [
+                  "employee_id",
+                  "department_id"
+                ],
+                "position": 2
+              }
+            ]
+          }
         },
         {
           "name": "from_date",
@@ -394,12 +579,19 @@
           },
           "nullable": false,
           "default": null,
+          "sequence": null,
           "primary_key": false,
           "unique": false,
           "auto_increment": false,
           "comment": null,
           "references": [],
-          "referenced_by": []
+          "referenced_by": [],
+          "usage": {
+            "is_foreign_key": false,
+            "is_referenced": false,
+            "reference_count": 0,
+            "composite_keys": []
+          }
         },
         {
           "name": "to_date",
@@ -410,12 +602,19 @@
           },
           "nullable": false,
           "default": null,
+          "sequence": null,
           "primary_key": false,
           "unique": false,
           "auto_increment": false,
           "comment": null,
           "references": [],
-          "referenced_by": []
+          "referenced_by": [],
+          "usage": {
+            "is_foreign_key": false,
+            "is_referenced": false,
+            "reference_count": 0,
+            "composite_keys": []
+          }
         }
       ],
       "indexes": [
@@ -425,7 +624,13 @@
             "department_id"
           ],
           "unique": false,
-          "type": "btree"
+          "type": "btree",
+          "usage": {
+            "is_primary": false,
+            "is_unique": false,
+            "is_composite": false,
+            "column_count": 1
+          }
         }
       ],
       "constraints": {
@@ -439,7 +644,16 @@
           ]
         }
       },
-      "comment": null
+      "comment": null,
+      "relationships": {
+        "has_many": [],
+        "belongs_to": [],
+        "has_one": [],
+        "many_to_many": [
+          "employee",
+          "department"
+        ]
+      }
     },
     "salary": {
       "name": "salary",
@@ -454,7 +668,8 @@
           },
           "nullable": false,
           "default": null,
-          "primary_key": false,
+          "sequence": null,
+          "primary_key": true,
           "unique": false,
           "auto_increment": false,
           "comment": null,
@@ -463,11 +678,27 @@
               "table": "employee",
               "column": "id",
               "name": "salaries_ibfk_1",
-              "onupdate": null,
-              "ondelete": null
+              "onupdate": "NO ACTION",
+              "ondelete": "NO ACTION"
             }
           ],
-          "referenced_by": []
+          "referenced_by": [],
+          "usage": {
+            "is_foreign_key": true,
+            "is_referenced": false,
+            "reference_count": 0,
+            "composite_keys": [
+              {
+                "type": "primary_key",
+                "name": "idx_16991_primary",
+                "columns": [
+                  "employee_id",
+                  "from_date"
+                ],
+                "position": 1
+              }
+            ]
+          }
         },
         {
           "name": "amount",
@@ -478,12 +709,19 @@
           },
           "nullable": false,
           "default": null,
+          "sequence": null,
           "primary_key": false,
           "unique": false,
           "auto_increment": false,
           "comment": null,
           "references": [],
-          "referenced_by": []
+          "referenced_by": [],
+          "usage": {
+            "is_foreign_key": false,
+            "is_referenced": false,
+            "reference_count": 0,
+            "composite_keys": []
+          }
         },
         {
           "name": "from_date",
@@ -494,12 +732,29 @@
           },
           "nullable": false,
           "default": null,
-          "primary_key": false,
+          "sequence": null,
+          "primary_key": true,
           "unique": false,
           "auto_increment": false,
           "comment": null,
           "references": [],
-          "referenced_by": []
+          "referenced_by": [],
+          "usage": {
+            "is_foreign_key": false,
+            "is_referenced": false,
+            "reference_count": 0,
+            "composite_keys": [
+              {
+                "type": "primary_key",
+                "name": "idx_16991_primary",
+                "columns": [
+                  "employee_id",
+                  "from_date"
+                ],
+                "position": 2
+              }
+            ]
+          }
         },
         {
           "name": "to_date",
@@ -510,12 +765,19 @@
           },
           "nullable": false,
           "default": null,
+          "sequence": null,
           "primary_key": false,
           "unique": false,
           "auto_increment": false,
           "comment": null,
           "references": [],
-          "referenced_by": []
+          "referenced_by": [],
+          "usage": {
+            "is_foreign_key": false,
+            "is_referenced": false,
+            "reference_count": 0,
+            "composite_keys": []
+          }
         }
       ],
       "indexes": [],
@@ -530,7 +792,15 @@
           ]
         }
       },
-      "comment": null
+      "comment": null,
+      "relationships": {
+        "has_many": [],
+        "belongs_to": [],
+        "has_one": [],
+        "many_to_many": [
+          "employee"
+        ]
+      }
     },
     "title": {
       "name": "title",
@@ -545,7 +815,8 @@
           },
           "nullable": false,
           "default": null,
-          "primary_key": false,
+          "sequence": null,
+          "primary_key": true,
           "unique": false,
           "auto_increment": false,
           "comment": null,
@@ -554,11 +825,28 @@
               "table": "employee",
               "column": "id",
               "name": "titles_ibfk_1",
-              "onupdate": null,
-              "ondelete": null
+              "onupdate": "NO ACTION",
+              "ondelete": "NO ACTION"
             }
           ],
-          "referenced_by": []
+          "referenced_by": [],
+          "usage": {
+            "is_foreign_key": true,
+            "is_referenced": false,
+            "reference_count": 0,
+            "composite_keys": [
+              {
+                "type": "primary_key",
+                "name": "idx_16994_primary",
+                "columns": [
+                  "employee_id",
+                  "title",
+                  "from_date"
+                ],
+                "position": 1
+              }
+            ]
+          }
         },
         {
           "name": "title",
@@ -571,12 +859,30 @@
           },
           "nullable": false,
           "default": null,
-          "primary_key": false,
+          "sequence": null,
+          "primary_key": true,
           "unique": false,
           "auto_increment": false,
           "comment": null,
           "references": [],
-          "referenced_by": []
+          "referenced_by": [],
+          "usage": {
+            "is_foreign_key": false,
+            "is_referenced": false,
+            "reference_count": 0,
+            "composite_keys": [
+              {
+                "type": "primary_key",
+                "name": "idx_16994_primary",
+                "columns": [
+                  "employee_id",
+                  "title",
+                  "from_date"
+                ],
+                "position": 2
+              }
+            ]
+          }
         },
         {
           "name": "from_date",
@@ -587,12 +893,30 @@
           },
           "nullable": false,
           "default": null,
-          "primary_key": false,
+          "sequence": null,
+          "primary_key": true,
           "unique": false,
           "auto_increment": false,
           "comment": null,
           "references": [],
-          "referenced_by": []
+          "referenced_by": [],
+          "usage": {
+            "is_foreign_key": false,
+            "is_referenced": false,
+            "reference_count": 0,
+            "composite_keys": [
+              {
+                "type": "primary_key",
+                "name": "idx_16994_primary",
+                "columns": [
+                  "employee_id",
+                  "title",
+                  "from_date"
+                ],
+                "position": 3
+              }
+            ]
+          }
         },
         {
           "name": "to_date",
@@ -603,12 +927,19 @@
           },
           "nullable": true,
           "default": null,
+          "sequence": null,
           "primary_key": false,
           "unique": false,
           "auto_increment": false,
           "comment": null,
           "references": [],
-          "referenced_by": []
+          "referenced_by": [],
+          "usage": {
+            "is_foreign_key": false,
+            "is_referenced": false,
+            "reference_count": 0,
+            "composite_keys": []
+          }
         }
       ],
       "indexes": [],
@@ -624,7 +955,15 @@
           ]
         }
       },
-      "comment": null
+      "comment": null,
+      "relationships": {
+        "has_many": [],
+        "belongs_to": [],
+        "has_one": [],
+        "many_to_many": [
+          "employee"
+        ]
+      }
     }
   }
 }
