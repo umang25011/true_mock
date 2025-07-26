@@ -62,7 +62,7 @@ class SchemaExtractor:
         }
         return type_map.get(sqlalchemy_type, 'Any')
 
-    def _get_column_details(self, table_name: str, column: Dict[str, Any]) -> Dict[str, Any]:
+    def _get_column_details(self, table_name: str, column: Dict[str, Any], table_constraints: Dict[str, Any]) -> Dict[str, Any]:
         """Extract detailed information about a column."""
         col_type = str(column['type'])
         type_params = {}
@@ -95,7 +95,7 @@ class SchemaExtractor:
             if hasattr(column['type'], 'scale'):
                 type_params['scale'] = column['type'].scale
 
-        # Build column info
+        # Build column info with direct flags
         column_info = {
             'name': column['name'],
             'type': {
@@ -103,26 +103,47 @@ class SchemaExtractor:
                 'sql': col_type,
                 'sqlalchemy_type': sqlalchemy_type,
                 'python_type': self._get_python_type(sqlalchemy_type)
+            },
+            'flags': {
+                'nullable': column.get('nullable', True),
+                'primary_key': column.get('primary_key', False),
+                'auto_increment': column.get('autoincrement', False) or 'nextval' in str(column.get('default', '')).lower(),
+                'unique': column.get('unique', False),
+                'foreign_key': False,  # Will be updated when processing FKs
+                'is_referenced': False  # Will be updated when processing FKs
             }
         }
         
+        # Add type params if present
         if type_params:
             column_info['type']['params'] = type_params
-        
-        # Add other column attributes - only include non-default values
-        if column.get('nullable', True):  # Only include if nullable=True
-            column_info['nullable'] = True
+
+        # Add default if present
         if column.get('default') is not None:
             column_info['default'] = str(column['default'])
-        if column.get('unique', False):
-            column_info['unique'] = True
-        if column.get('autoincrement', False):
-            column_info['auto_increment'] = True
 
-        # References (cleaned up - only include non-default actions)
-        column_info['references'] = []
-        column_info['referenced_by'] = []
-        
+        # Check if column is part of primary key
+        if table_constraints['primary_key']:
+            if column['name'] in table_constraints['primary_key']['columns']:
+                column_info['flags']['primary_key'] = True
+                column_info['flags']['nullable'] = False
+                if len(table_constraints['primary_key']['columns']) > 1:
+                    column_info['flags']['composite_primary_key'] = True
+                    column_info['flags']['composite_position'] = table_constraints['primary_key']['columns'].index(column['name']) + 1
+
+        # Check unique constraints
+        for const in table_constraints['unique']:
+            if column['name'] in const['columns']:
+                column_info['flags']['unique'] = True
+                if len(const['columns']) > 1:
+                    if 'composite_unique' not in column_info['flags']:
+                        column_info['flags']['composite_unique'] = []
+                    column_info['flags']['composite_unique'].append({
+                        'name': const['name'],
+                        'columns': const['columns'],
+                        'position': const['columns'].index(column['name']) + 1
+                    })
+
         return column_info
 
     def _get_index_details(self, table_name: str) -> List[Dict[str, Any]]:
@@ -185,27 +206,31 @@ class SchemaExtractor:
                     # Add reference to the local column
                     for col in table_info['columns']:
                         if col['name'] == local_col:
-                            ref_info = {
+                            # Add foreign key info
+                            col['foreign_key'] = {
                                 'table': fk['referred_table'],
                                 'column': remote_col,
                                 'name': fk['name']
                             }
-                            # Only include non-default actions
+                            # Add non-default actions
                             if fk.get('onupdate') and fk['onupdate'] != 'NO ACTION':
-                                ref_info['onupdate'] = fk['onupdate']
+                                col['foreign_key']['onupdate'] = fk['onupdate']
                             if fk.get('ondelete') and fk['ondelete'] != 'NO ACTION':
-                                ref_info['ondelete'] = fk['ondelete']
-                            col['references'].append(ref_info)
+                                col['foreign_key']['ondelete'] = fk['ondelete']
+                            # Update flags
+                            col['flags']['foreign_key'] = True
                     
-                    # Add referenced_by to the remote column (simplified)
+                    # Update referenced column
                     remote_table = schema_data['tables'][fk['referred_table']]
                     for col in remote_table['columns']:
                         if col['name'] == remote_col:
+                            if 'referenced_by' not in col:
+                                col['referenced_by'] = []
                             col['referenced_by'].append({
                                 'table': table_name,
-                                'column': local_col,
-                                'name': fk['name']
+                                'column': local_col
                             })
+                            col['flags']['is_referenced'] = True
 
     def _analyze_relationships(self, table_info: Dict[str, Any], schema_data: Dict[str, Any]) -> List[Dict[str, Any]]:
         """Analyze table relationships based on foreign keys."""
@@ -214,23 +239,24 @@ class SchemaExtractor:
         # Track processed relationships to avoid duplicates
         processed = set()
         
-        # Check each column's references and referenced_by
+        # Check each column's foreign keys and references
         for col in table_info['columns']:
             # belongs_to relationships (foreign keys)
-            if 'references' in col:
-                for ref in col['references']:
-                    rel_key = f"belongs_to:{ref['table']}"
-                    if rel_key not in processed:
-                        processed.add(rel_key)
-                        relationships.append({
-                            'type': 'belongs_to',
-                            'table': ref['table'],
-                            'foreign_key': col['name'],
-                            'back_populates': table_info['name']
-                        })
+            if col['flags'].get('foreign_key'):
+                fk = col['foreign_key']
+                rel_key = f"belongs_to:{fk['table']}"
+                if rel_key not in processed:
+                    processed.add(rel_key)
+                    relationships.append({
+                        'type': 'belongs_to',
+                        'target': fk['table'],
+                        'foreign_key': col['name'],
+                        'local_field': fk['table'].lower(),  # SQLAlchemy relationship name
+                        'back_populates': table_info['name'].lower()
+                    })
             
-            # has_many/has_one relationships (referenced by others)
-            if 'referenced_by' in col:
+            # has_many/has_one relationships
+            if col['flags'].get('is_referenced'):
                 for ref in col['referenced_by']:
                     rel_key = f"has_many:{ref['table']}"
                     rev_key = f"belongs_to:{table_info['name']}"
@@ -241,18 +267,17 @@ class SchemaExtractor:
                         # Check if unique reference
                         ref_table = schema_data['tables'][ref['table']]
                         is_unique = any(
-                            ref['column'] in const['columns'] 
-                            for const in ref_table['constraints']['unique']
-                        ) or any(
-                            ref['column'] in idx['columns'] and idx['unique']
-                            for idx in ref_table.get('indexes', [])
+                            col['flags'].get('unique', False)
+                            for col in ref_table['columns']
+                            if col['name'] == ref['column']
                         )
                         
                         relationships.append({
                             'type': 'has_one' if is_unique else 'has_many',
-                            'table': ref['table'],
+                            'target': ref['table'],
                             'foreign_key': ref['column'],
-                            'back_populates': table_info['name']
+                            'local_field': ref['table'].lower() + ('_one' if is_unique else '_many'),
+                            'back_populates': table_info['name'].lower()
                         })
         
         return relationships
@@ -284,26 +309,32 @@ class SchemaExtractor:
 
     def _get_table_details(self, table_name: str) -> Dict[str, Any]:
         """Get comprehensive details about a table."""
+        # Get constraints first
+        constraints = self._get_constraint_details(table_name)
+        
         table_info = {
             'name': table_name,
             'schema': self.schema,
             'columns': [],
-            'indexes': [],
-            'constraints': self._get_constraint_details(table_name)
+            'model_config': {
+                'table_name': table_name,
+                'schema': self.schema
+            }
         }
 
-        # Get columns
+        # Add primary key info to model config
+        if constraints['primary_key']:
+            table_info['model_config']['primary_keys'] = constraints['primary_key']['columns']
+
+        # Get columns with constraint info
         for col in self.inspector.get_columns(table_name, schema=self.schema):
-            column_info = self._get_column_details(table_name, col)
+            column_info = self._get_column_details(table_name, col, constraints)
             table_info['columns'].append(column_info)
 
-        # Get indexes
+        # Get indexes (only if present)
         indexes = self._get_index_details(table_name)
         if indexes:
             table_info['indexes'] = indexes
-
-        # Add model configuration
-        table_info['model_config'] = self._get_model_config(table_info)
 
         return table_info
 
@@ -370,12 +401,14 @@ class SchemaExtractor:
             # Add relationships
             table_info['relationships'] = self._analyze_relationships(table_info, schema_data)
             
-            # Clean up columns - remove empty reference arrays
+            # Clean up columns - remove empty arrays and None values
             for col in table_info['columns']:
-                if not col['references']:
-                    del col['references']
-                if not col['referenced_by']:
+                # Remove referenced_by if empty
+                if 'referenced_by' in col and not col['referenced_by']:
                     del col['referenced_by']
+                
+                # Clean up flags - remove False flags
+                col['flags'] = {k: v for k, v in col['flags'].items() if v}
 
         # Save to file with nice formatting
         with open(output_file, 'w') as f:
