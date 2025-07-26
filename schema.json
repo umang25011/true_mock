@@ -3,7 +3,7 @@
     "name": "employees",
     "dialect": "postgresql",
     "version": "(17, 5)",
-    "generated_at": "2025-07-26T10:56:49.024210"
+    "generated_at": "2025-07-26T11:12:57.008533"
   },
   "tables": {
     "employee": {
@@ -15,19 +15,11 @@
           "type": {
             "python": "BIGINT",
             "sql": "BIGINT",
-            "params": {}
+            "sqlalchemy_type": "BigInteger",
+            "python_type": "int"
           },
-          "nullable": false,
           "default": "nextval('employees.id_employee_seq'::regclass)",
-          "sequence": {
-            "name": "id_employee_seq",
-            "type": "auto_increment"
-          },
-          "primary_key": true,
-          "unique": false,
           "auto_increment": true,
-          "comment": null,
-          "references": [],
           "referenced_by": [
             {
               "table": "department_employee",
@@ -49,35 +41,15 @@
               "column": "employee_id",
               "name": "titles_ibfk_1"
             }
-          ],
-          "usage": {
-            "is_foreign_key": false,
-            "is_referenced": true,
-            "reference_count": 4,
-            "composite_keys": []
-          }
+          ]
         },
         {
           "name": "birth_date",
           "type": {
             "python": "DATE",
             "sql": "DATE",
-            "params": {}
-          },
-          "nullable": false,
-          "default": null,
-          "sequence": null,
-          "primary_key": false,
-          "unique": false,
-          "auto_increment": false,
-          "comment": null,
-          "references": [],
-          "referenced_by": [],
-          "usage": {
-            "is_foreign_key": false,
-            "is_referenced": false,
-            "reference_count": 0,
-            "composite_keys": []
+            "sqlalchemy_type": "Date",
+            "python_type": "date"
           }
         },
         {
@@ -85,24 +57,11 @@
           "type": {
             "python": "VARCHAR",
             "sql": "VARCHAR(14)",
+            "sqlalchemy_type": "String",
+            "python_type": "str",
             "params": {
               "length": 14
             }
-          },
-          "nullable": false,
-          "default": null,
-          "sequence": null,
-          "primary_key": false,
-          "unique": false,
-          "auto_increment": false,
-          "comment": null,
-          "references": [],
-          "referenced_by": [],
-          "usage": {
-            "is_foreign_key": false,
-            "is_referenced": false,
-            "reference_count": 0,
-            "composite_keys": []
           }
         },
         {
@@ -110,24 +69,11 @@
           "type": {
             "python": "VARCHAR",
             "sql": "VARCHAR(16)",
+            "sqlalchemy_type": "String",
+            "python_type": "str",
             "params": {
               "length": 16
             }
-          },
-          "nullable": false,
-          "default": null,
-          "sequence": null,
-          "primary_key": false,
-          "unique": false,
-          "auto_increment": false,
-          "comment": null,
-          "references": [],
-          "referenced_by": [],
-          "usage": {
-            "is_foreign_key": false,
-            "is_referenced": false,
-            "reference_count": 0,
-            "composite_keys": []
           }
         },
         {
@@ -135,27 +81,14 @@
           "type": {
             "python": "ENUM",
             "sql": "VARCHAR(1)",
+            "sqlalchemy_type": "Enum",
+            "python_type": "str",
             "params": {
               "enum_values": [
                 "M",
                 "F"
               ]
             }
-          },
-          "nullable": false,
-          "default": null,
-          "sequence": null,
-          "primary_key": false,
-          "unique": false,
-          "auto_increment": false,
-          "comment": null,
-          "references": [],
-          "referenced_by": [],
-          "usage": {
-            "is_foreign_key": false,
-            "is_referenced": false,
-            "reference_count": 0,
-            "composite_keys": []
           }
         },
         {
@@ -163,22 +96,8 @@
           "type": {
             "python": "DATE",
             "sql": "DATE",
-            "params": {}
-          },
-          "nullable": false,
-          "default": null,
-          "sequence": null,
-          "primary_key": false,
-          "unique": false,
-          "auto_increment": false,
-          "comment": null,
-          "references": [],
-          "referenced_by": [],
-          "usage": {
-            "is_foreign_key": false,
-            "is_referenced": false,
-            "reference_count": 0,
-            "composite_keys": []
+            "sqlalchemy_type": "Date",
+            "python_type": "date"
           }
         }
       ],
@@ -193,18 +112,40 @@
           ]
         }
       },
-      "comment": null,
-      "relationships": {
-        "has_many": [],
-        "belongs_to": [],
-        "has_one": [],
-        "many_to_many": [
-          "department_employee",
-          "department_manager",
-          "salary",
-          "title"
+      "model_config": {
+        "table_args": {
+          "schema": "employees"
+        },
+        "primary_keys": [
+          "id"
         ]
-      }
+      },
+      "relationships": [
+        {
+          "type": "has_many",
+          "table": "department_employee",
+          "foreign_key": "employee_id",
+          "back_populates": "employee"
+        },
+        {
+          "type": "has_many",
+          "table": "department_manager",
+          "foreign_key": "employee_id",
+          "back_populates": "employee"
+        },
+        {
+          "type": "has_many",
+          "table": "salary",
+          "foreign_key": "employee_id",
+          "back_populates": "employee"
+        },
+        {
+          "type": "has_many",
+          "table": "title",
+          "foreign_key": "employee_id",
+          "back_populates": "employee"
+        }
+      ]
     },
     "department_employee": {
       "name": "department_employee",
@@ -215,106 +156,43 @@
           "type": {
             "python": "BIGINT",
             "sql": "BIGINT",
-            "params": {}
+            "sqlalchemy_type": "BigInteger",
+            "python_type": "int"
           },
-          "nullable": false,
-          "default": null,
-          "sequence": null,
-          "primary_key": true,
-          "unique": false,
-          "auto_increment": false,
-          "comment": null,
           "references": [
             {
               "table": "employee",
               "column": "id",
-              "name": "dept_emp_ibfk_1",
-              "onupdate": "NO ACTION",
-              "ondelete": "NO ACTION"
+              "name": "dept_emp_ibfk_1"
             }
-          ],
-          "referenced_by": [],
-          "usage": {
-            "is_foreign_key": true,
-            "is_referenced": false,
-            "reference_count": 0,
-            "composite_keys": [
-              {
-                "type": "primary_key",
-                "name": "idx_16982_primary",
-                "columns": [
-                  "employee_id",
-                  "department_id"
-                ],
-                "position": 1
-              }
-            ]
-          }
+          ]
         },
         {
           "name": "department_id",
           "type": {
             "python": "CHAR",
             "sql": "CHAR(4)",
+            "sqlalchemy_type": "String",
+            "python_type": "str",
             "params": {
               "length": 4
             }
           },
-          "nullable": false,
-          "default": null,
-          "sequence": null,
-          "primary_key": true,
-          "unique": false,
-          "auto_increment": false,
-          "comment": null,
           "references": [
             {
               "table": "department",
               "column": "id",
-              "name": "dept_emp_ibfk_2",
-              "onupdate": "NO ACTION",
-              "ondelete": "NO ACTION"
+              "name": "dept_emp_ibfk_2"
             }
-          ],
-          "referenced_by": [],
-          "usage": {
-            "is_foreign_key": true,
-            "is_referenced": false,
-            "reference_count": 0,
-            "composite_keys": [
-              {
-                "type": "primary_key",
-                "name": "idx_16982_primary",
-                "columns": [
-                  "employee_id",
-                  "department_id"
-                ],
-                "position": 2
-              }
-            ]
-          }
+          ]
         },
         {
           "name": "from_date",
           "type": {
             "python": "DATE",
             "sql": "DATE",
-            "params": {}
-          },
-          "nullable": false,
-          "default": null,
-          "sequence": null,
-          "primary_key": false,
-          "unique": false,
-          "auto_increment": false,
-          "comment": null,
-          "references": [],
-          "referenced_by": [],
-          "usage": {
-            "is_foreign_key": false,
-            "is_referenced": false,
-            "reference_count": 0,
-            "composite_keys": []
+            "sqlalchemy_type": "Date",
+            "python_type": "date"
           }
         },
         {
@@ -322,22 +200,8 @@
           "type": {
             "python": "DATE",
             "sql": "DATE",
-            "params": {}
-          },
-          "nullable": false,
-          "default": null,
-          "sequence": null,
-          "primary_key": false,
-          "unique": false,
-          "auto_increment": false,
-          "comment": null,
-          "references": [],
-          "referenced_by": [],
-          "usage": {
-            "is_foreign_key": false,
-            "is_referenced": false,
-            "reference_count": 0,
-            "composite_keys": []
+            "sqlalchemy_type": "Date",
+            "python_type": "date"
           }
         }
       ],
@@ -348,13 +212,7 @@
             "department_id"
           ],
           "unique": false,
-          "type": "btree",
-          "usage": {
-            "is_primary": false,
-            "is_unique": false,
-            "is_composite": false,
-            "column_count": 1
-          }
+          "type": "btree"
         }
       ],
       "constraints": {
@@ -368,16 +226,29 @@
           ]
         }
       },
-      "comment": null,
-      "relationships": {
-        "has_many": [],
-        "belongs_to": [],
-        "has_one": [],
-        "many_to_many": [
-          "employee",
-          "department"
+      "model_config": {
+        "table_args": {
+          "schema": "employees"
+        },
+        "primary_keys": [
+          "employee_id",
+          "department_id"
         ]
-      }
+      },
+      "relationships": [
+        {
+          "type": "belongs_to",
+          "table": "employee",
+          "foreign_key": "employee_id",
+          "back_populates": "department_employee"
+        },
+        {
+          "type": "belongs_to",
+          "table": "department",
+          "foreign_key": "department_id",
+          "back_populates": "department_employee"
+        }
+      ]
     },
     "department": {
       "name": "department",
@@ -388,18 +259,12 @@
           "type": {
             "python": "CHAR",
             "sql": "CHAR(4)",
+            "sqlalchemy_type": "String",
+            "python_type": "str",
             "params": {
               "length": 4
             }
           },
-          "nullable": false,
-          "default": null,
-          "sequence": null,
-          "primary_key": true,
-          "unique": false,
-          "auto_increment": false,
-          "comment": null,
-          "references": [],
           "referenced_by": [
             {
               "table": "department_employee",
@@ -411,37 +276,18 @@
               "column": "department_id",
               "name": "dept_manager_ibfk_2"
             }
-          ],
-          "usage": {
-            "is_foreign_key": false,
-            "is_referenced": true,
-            "reference_count": 2,
-            "composite_keys": []
-          }
+          ]
         },
         {
           "name": "dept_name",
           "type": {
             "python": "VARCHAR",
             "sql": "VARCHAR(40)",
+            "sqlalchemy_type": "String",
+            "python_type": "str",
             "params": {
               "length": 40
             }
-          },
-          "nullable": false,
-          "default": null,
-          "sequence": null,
-          "primary_key": false,
-          "unique": true,
-          "auto_increment": false,
-          "comment": null,
-          "references": [],
-          "referenced_by": [],
-          "usage": {
-            "is_foreign_key": false,
-            "is_referenced": false,
-            "reference_count": 0,
-            "composite_keys": []
           }
         }
       ],
@@ -452,13 +298,7 @@
             "dept_name"
           ],
           "unique": true,
-          "type": "btree",
-          "usage": {
-            "is_primary": false,
-            "is_unique": true,
-            "is_composite": false,
-            "column_count": 1
-          }
+          "type": "btree"
         }
       ],
       "constraints": {
@@ -471,16 +311,31 @@
           ]
         }
       },
-      "comment": null,
-      "relationships": {
-        "has_many": [],
-        "belongs_to": [],
-        "has_one": [],
-        "many_to_many": [
-          "department_employee",
-          "department_manager"
+      "model_config": {
+        "table_args": {
+          "schema": "employees"
+        },
+        "primary_keys": [
+          "id"
+        ],
+        "unique_constraints": [
+          "dept_name"
         ]
-      }
+      },
+      "relationships": [
+        {
+          "type": "has_many",
+          "table": "department_employee",
+          "foreign_key": "department_id",
+          "back_populates": "department"
+        },
+        {
+          "type": "has_many",
+          "table": "department_manager",
+          "foreign_key": "department_id",
+          "back_populates": "department"
+        }
+      ]
     },
     "department_manager": {
       "name": "department_manager",
@@ -491,106 +346,43 @@
           "type": {
             "python": "BIGINT",
             "sql": "BIGINT",
-            "params": {}
+            "sqlalchemy_type": "BigInteger",
+            "python_type": "int"
           },
-          "nullable": false,
-          "default": null,
-          "sequence": null,
-          "primary_key": true,
-          "unique": false,
-          "auto_increment": false,
-          "comment": null,
           "references": [
             {
               "table": "employee",
               "column": "id",
-              "name": "dept_manager_ibfk_1",
-              "onupdate": "NO ACTION",
-              "ondelete": "NO ACTION"
+              "name": "dept_manager_ibfk_1"
             }
-          ],
-          "referenced_by": [],
-          "usage": {
-            "is_foreign_key": true,
-            "is_referenced": false,
-            "reference_count": 0,
-            "composite_keys": [
-              {
-                "type": "primary_key",
-                "name": "idx_16985_primary",
-                "columns": [
-                  "employee_id",
-                  "department_id"
-                ],
-                "position": 1
-              }
-            ]
-          }
+          ]
         },
         {
           "name": "department_id",
           "type": {
             "python": "CHAR",
             "sql": "CHAR(4)",
+            "sqlalchemy_type": "String",
+            "python_type": "str",
             "params": {
               "length": 4
             }
           },
-          "nullable": false,
-          "default": null,
-          "sequence": null,
-          "primary_key": true,
-          "unique": false,
-          "auto_increment": false,
-          "comment": null,
           "references": [
             {
               "table": "department",
               "column": "id",
-              "name": "dept_manager_ibfk_2",
-              "onupdate": "NO ACTION",
-              "ondelete": "NO ACTION"
+              "name": "dept_manager_ibfk_2"
             }
-          ],
-          "referenced_by": [],
-          "usage": {
-            "is_foreign_key": true,
-            "is_referenced": false,
-            "reference_count": 0,
-            "composite_keys": [
-              {
-                "type": "primary_key",
-                "name": "idx_16985_primary",
-                "columns": [
-                  "employee_id",
-                  "department_id"
-                ],
-                "position": 2
-              }
-            ]
-          }
+          ]
         },
         {
           "name": "from_date",
           "type": {
             "python": "DATE",
             "sql": "DATE",
-            "params": {}
-          },
-          "nullable": false,
-          "default": null,
-          "sequence": null,
-          "primary_key": false,
-          "unique": false,
-          "auto_increment": false,
-          "comment": null,
-          "references": [],
-          "referenced_by": [],
-          "usage": {
-            "is_foreign_key": false,
-            "is_referenced": false,
-            "reference_count": 0,
-            "composite_keys": []
+            "sqlalchemy_type": "Date",
+            "python_type": "date"
           }
         },
         {
@@ -598,22 +390,8 @@
           "type": {
             "python": "DATE",
             "sql": "DATE",
-            "params": {}
-          },
-          "nullable": false,
-          "default": null,
-          "sequence": null,
-          "primary_key": false,
-          "unique": false,
-          "auto_increment": false,
-          "comment": null,
-          "references": [],
-          "referenced_by": [],
-          "usage": {
-            "is_foreign_key": false,
-            "is_referenced": false,
-            "reference_count": 0,
-            "composite_keys": []
+            "sqlalchemy_type": "Date",
+            "python_type": "date"
           }
         }
       ],
@@ -624,13 +402,7 @@
             "department_id"
           ],
           "unique": false,
-          "type": "btree",
-          "usage": {
-            "is_primary": false,
-            "is_unique": false,
-            "is_composite": false,
-            "column_count": 1
-          }
+          "type": "btree"
         }
       ],
       "constraints": {
@@ -644,16 +416,29 @@
           ]
         }
       },
-      "comment": null,
-      "relationships": {
-        "has_many": [],
-        "belongs_to": [],
-        "has_one": [],
-        "many_to_many": [
-          "employee",
-          "department"
+      "model_config": {
+        "table_args": {
+          "schema": "employees"
+        },
+        "primary_keys": [
+          "employee_id",
+          "department_id"
         ]
-      }
+      },
+      "relationships": [
+        {
+          "type": "belongs_to",
+          "table": "employee",
+          "foreign_key": "employee_id",
+          "back_populates": "department_manager"
+        },
+        {
+          "type": "belongs_to",
+          "table": "department",
+          "foreign_key": "department_id",
+          "back_populates": "department_manager"
+        }
+      ]
     },
     "salary": {
       "name": "salary",
@@ -664,63 +449,24 @@
           "type": {
             "python": "BIGINT",
             "sql": "BIGINT",
-            "params": {}
+            "sqlalchemy_type": "BigInteger",
+            "python_type": "int"
           },
-          "nullable": false,
-          "default": null,
-          "sequence": null,
-          "primary_key": true,
-          "unique": false,
-          "auto_increment": false,
-          "comment": null,
           "references": [
             {
               "table": "employee",
               "column": "id",
-              "name": "salaries_ibfk_1",
-              "onupdate": "NO ACTION",
-              "ondelete": "NO ACTION"
+              "name": "salaries_ibfk_1"
             }
-          ],
-          "referenced_by": [],
-          "usage": {
-            "is_foreign_key": true,
-            "is_referenced": false,
-            "reference_count": 0,
-            "composite_keys": [
-              {
-                "type": "primary_key",
-                "name": "idx_16991_primary",
-                "columns": [
-                  "employee_id",
-                  "from_date"
-                ],
-                "position": 1
-              }
-            ]
-          }
+          ]
         },
         {
           "name": "amount",
           "type": {
             "python": "BIGINT",
             "sql": "BIGINT",
-            "params": {}
-          },
-          "nullable": false,
-          "default": null,
-          "sequence": null,
-          "primary_key": false,
-          "unique": false,
-          "auto_increment": false,
-          "comment": null,
-          "references": [],
-          "referenced_by": [],
-          "usage": {
-            "is_foreign_key": false,
-            "is_referenced": false,
-            "reference_count": 0,
-            "composite_keys": []
+            "sqlalchemy_type": "BigInteger",
+            "python_type": "int"
           }
         },
         {
@@ -728,32 +474,8 @@
           "type": {
             "python": "DATE",
             "sql": "DATE",
-            "params": {}
-          },
-          "nullable": false,
-          "default": null,
-          "sequence": null,
-          "primary_key": true,
-          "unique": false,
-          "auto_increment": false,
-          "comment": null,
-          "references": [],
-          "referenced_by": [],
-          "usage": {
-            "is_foreign_key": false,
-            "is_referenced": false,
-            "reference_count": 0,
-            "composite_keys": [
-              {
-                "type": "primary_key",
-                "name": "idx_16991_primary",
-                "columns": [
-                  "employee_id",
-                  "from_date"
-                ],
-                "position": 2
-              }
-            ]
+            "sqlalchemy_type": "Date",
+            "python_type": "date"
           }
         },
         {
@@ -761,22 +483,8 @@
           "type": {
             "python": "DATE",
             "sql": "DATE",
-            "params": {}
-          },
-          "nullable": false,
-          "default": null,
-          "sequence": null,
-          "primary_key": false,
-          "unique": false,
-          "auto_increment": false,
-          "comment": null,
-          "references": [],
-          "referenced_by": [],
-          "usage": {
-            "is_foreign_key": false,
-            "is_referenced": false,
-            "reference_count": 0,
-            "composite_keys": []
+            "sqlalchemy_type": "Date",
+            "python_type": "date"
           }
         }
       ],
@@ -792,15 +500,23 @@
           ]
         }
       },
-      "comment": null,
-      "relationships": {
-        "has_many": [],
-        "belongs_to": [],
-        "has_one": [],
-        "many_to_many": [
-          "employee"
+      "model_config": {
+        "table_args": {
+          "schema": "employees"
+        },
+        "primary_keys": [
+          "employee_id",
+          "from_date"
         ]
-      }
+      },
+      "relationships": [
+        {
+          "type": "belongs_to",
+          "table": "employee",
+          "foreign_key": "employee_id",
+          "back_populates": "salary"
+        }
+      ]
     },
     "title": {
       "name": "title",
@@ -811,77 +527,27 @@
           "type": {
             "python": "BIGINT",
             "sql": "BIGINT",
-            "params": {}
+            "sqlalchemy_type": "BigInteger",
+            "python_type": "int"
           },
-          "nullable": false,
-          "default": null,
-          "sequence": null,
-          "primary_key": true,
-          "unique": false,
-          "auto_increment": false,
-          "comment": null,
           "references": [
             {
               "table": "employee",
               "column": "id",
-              "name": "titles_ibfk_1",
-              "onupdate": "NO ACTION",
-              "ondelete": "NO ACTION"
+              "name": "titles_ibfk_1"
             }
-          ],
-          "referenced_by": [],
-          "usage": {
-            "is_foreign_key": true,
-            "is_referenced": false,
-            "reference_count": 0,
-            "composite_keys": [
-              {
-                "type": "primary_key",
-                "name": "idx_16994_primary",
-                "columns": [
-                  "employee_id",
-                  "title",
-                  "from_date"
-                ],
-                "position": 1
-              }
-            ]
-          }
+          ]
         },
         {
           "name": "title",
           "type": {
             "python": "VARCHAR",
             "sql": "VARCHAR(50)",
+            "sqlalchemy_type": "String",
+            "python_type": "str",
             "params": {
               "length": 50
             }
-          },
-          "nullable": false,
-          "default": null,
-          "sequence": null,
-          "primary_key": true,
-          "unique": false,
-          "auto_increment": false,
-          "comment": null,
-          "references": [],
-          "referenced_by": [],
-          "usage": {
-            "is_foreign_key": false,
-            "is_referenced": false,
-            "reference_count": 0,
-            "composite_keys": [
-              {
-                "type": "primary_key",
-                "name": "idx_16994_primary",
-                "columns": [
-                  "employee_id",
-                  "title",
-                  "from_date"
-                ],
-                "position": 2
-              }
-            ]
           }
         },
         {
@@ -889,33 +555,8 @@
           "type": {
             "python": "DATE",
             "sql": "DATE",
-            "params": {}
-          },
-          "nullable": false,
-          "default": null,
-          "sequence": null,
-          "primary_key": true,
-          "unique": false,
-          "auto_increment": false,
-          "comment": null,
-          "references": [],
-          "referenced_by": [],
-          "usage": {
-            "is_foreign_key": false,
-            "is_referenced": false,
-            "reference_count": 0,
-            "composite_keys": [
-              {
-                "type": "primary_key",
-                "name": "idx_16994_primary",
-                "columns": [
-                  "employee_id",
-                  "title",
-                  "from_date"
-                ],
-                "position": 3
-              }
-            ]
+            "sqlalchemy_type": "Date",
+            "python_type": "date"
           }
         },
         {
@@ -923,23 +564,10 @@
           "type": {
             "python": "DATE",
             "sql": "DATE",
-            "params": {}
+            "sqlalchemy_type": "Date",
+            "python_type": "date"
           },
-          "nullable": true,
-          "default": null,
-          "sequence": null,
-          "primary_key": false,
-          "unique": false,
-          "auto_increment": false,
-          "comment": null,
-          "references": [],
-          "referenced_by": [],
-          "usage": {
-            "is_foreign_key": false,
-            "is_referenced": false,
-            "reference_count": 0,
-            "composite_keys": []
-          }
+          "nullable": true
         }
       ],
       "indexes": [],
@@ -955,15 +583,24 @@
           ]
         }
       },
-      "comment": null,
-      "relationships": {
-        "has_many": [],
-        "belongs_to": [],
-        "has_one": [],
-        "many_to_many": [
-          "employee"
+      "model_config": {
+        "table_args": {
+          "schema": "employees"
+        },
+        "primary_keys": [
+          "employee_id",
+          "title",
+          "from_date"
         ]
-      }
+      },
+      "relationships": [
+        {
+          "type": "belongs_to",
+          "table": "employee",
+          "foreign_key": "employee_id",
+          "back_populates": "title"
+        }
+      ]
     }
   }
 }
