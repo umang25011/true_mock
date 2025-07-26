@@ -14,7 +14,7 @@ from core.db_operations import DatabaseOperations
 from core.model_generator import ModelGenerator
 
 
-def generate_and_test_model(generator: ModelGenerator, table_name: str) -> None:
+def generate_and_test_model(generator: ModelGenerator, table_name: str, db_connector: DatabaseConnector) -> None:
     """Generate and test a model for a specific table."""
     print(f"\nGenerating model for table: {table_name}")
     print("=" * 50)
@@ -41,9 +41,9 @@ def generate_and_test_model(generator: ModelGenerator, table_name: str) -> None:
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
     
-    # Create instance of the generated model
+    # Create instance of the generated model with db_connector
     TableClass = getattr(module, class_name)
-    table_model = TableClass()
+    table_model = TableClass(db_connector=db_connector)
     
     # Show table structure
     print("\nTable Structure:")
@@ -85,7 +85,7 @@ def run_examples():
             # Generate and test all tables
             print(f"\nGenerating models for all {len(tables)} tables...")
             for table in tables:
-                generate_and_test_model(generator, table)
+                generate_and_test_model(generator, table, connector)
             
             print("\nAll models generated successfully!")
             

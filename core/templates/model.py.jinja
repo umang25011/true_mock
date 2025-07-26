@@ -17,9 +17,6 @@ fake = Faker()
 
 from core import TableModel
 from core import ({{ imports.core|join(', ') }})
-{% if imports.relations %}
-from core.relations import ({{ imports.relations|join(', ') }})
-{% endif %}
 
 class {{ class_name }}(TableModel):
     """Model for {{ table_name }} table."""
@@ -28,31 +25,7 @@ class {{ class_name }}(TableModel):
         """Define the table columns."""
         self.columns = {
             {% for column in columns %}
-            '{{ column.name }}': {{ column.type }}(
-                {% for arg in column.args %}
-                {{ arg }},
-                {% endfor %}
-            ),
+            '{{ column.name }}': {{ column.definition }}{% if not loop.last %},{% endif %}
+
             {% endfor %}
         }
-
-    {% if relations %}
-    def _setup_relations(self):
-        """Define the table relationships."""
-        {% for relation in relations %}
-        self.relations.append(
-            {{ relation.__class__.__name__ }}(
-                from_table="{{ relation.from_table }}",
-                to_table="{{ relation.to_table }}",
-                from_column="{{ relation.from_column }}",
-                to_column="{{ relation.to_column }}"{% if relation.__class__.__name__ == "ManyToManyRelation" %},
-                junction_table="{{ relation.junction_table }}"{% endif %},
-                config=RelationConfig(
-                    min_related={{ relation.config.min_related }},
-                    max_related={{ relation.config.max_related }},
-                    pool_size={{ relation.config.pool_size }}
-                )
-            )
-        )
-        {% endfor %}
-    {% endif %} 

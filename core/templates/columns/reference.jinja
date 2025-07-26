@@ -1,0 +1,7 @@
+ReferenceColumn(
+    {% if nullable is defined %}nullable={{ nullable }},{% endif %}
+    {% if unique is defined %}unique={{ unique }},{% endif %}
+    to_table="{{ to_table }}",
+    to_column="{{ to_column }}",
+    db_connector=self.db_connector
+) 

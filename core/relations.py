@@ -4,9 +4,12 @@ Defines different types of relationships and their data generation behavior.
 """
 
 from enum import Enum
-from typing import Optional, List, Any, Dict
+from typing import Optional, List, Any, Dict, TYPE_CHECKING
 from dataclasses import dataclass
 import random
+
+if TYPE_CHECKING:
+    from .base_table import TableModel
 
 class RelationType(Enum):
     """Types of relationships between tables."""
@@ -42,7 +45,7 @@ class Relation:
         self.config = config or RelationConfig()
         self._cached_data: Dict[str, Any] = {}
 
-    def generate_related_data(self, model_registry) -> Any:
+    def generate_related_data(self, model_registry: 'ModelRegistry') -> Any:
         """Generate or fetch related data - to be implemented by subclasses."""
         raise NotImplementedError
 
@@ -50,7 +53,7 @@ class Relation:
         """Clear cached related data."""
         self._cached_data.clear()
 
-    def _ensure_cached_data(self, model_registry) -> List[Any]:
+    def _ensure_cached_data(self, model_registry: 'ModelRegistry') -> List[Any]:
         """Ensure cached data exists, generate if needed."""
         if not self._cached_data.get(self.to_table) or not self.config.cache_existing:
             related_model = model_registry.get_model(self.to_table)
@@ -63,7 +66,7 @@ class Relation:
 class OneToOneRelation(Relation):
     """One-to-One relationship handler."""
     
-    def generate_related_data(self, model_registry) -> Any:
+    def generate_related_data(self, model_registry: 'ModelRegistry') -> Any:
         """Generate exactly one related record."""
         related_model = model_registry.get_model(self.to_table)
         related_data = related_model.generate_row()
@@ -72,7 +75,7 @@ class OneToOneRelation(Relation):
 class ManyToOneRelation(Relation):
     """Many-to-One relationship handler."""
     
-    def generate_related_data(self, model_registry) -> Any:
+    def generate_related_data(self, model_registry: 'ModelRegistry') -> Any:
         """Generate or get one record that can be referenced multiple times."""
         cached_data = self._ensure_cached_data(model_registry)
         return random.choice(cached_data)
@@ -80,7 +83,7 @@ class ManyToOneRelation(Relation):
 class OneToManyRelation(Relation):
     """One-to-Many relationship handler."""
     
-    def generate_related_data(self, model_registry) -> List[Any]:
+    def generate_related_data(self, model_registry: 'ModelRegistry') -> List[Any]:
         """Generate multiple related records."""
         count = random.randint(self.config.min_related, self.config.max_related)
         related_model = model_registry.get_model(self.to_table)
@@ -104,7 +107,7 @@ class ManyToManyRelation(Relation):
         super().__init__(from_table, to_table, from_column, to_column, config)
         self.junction_table = junction_table
 
-    def generate_related_data(self, model_registry) -> List[Any]:
+    def generate_related_data(self, model_registry: 'ModelRegistry') -> List[Any]:
         """Generate multiple related records through junction table."""
         count = random.randint(self.config.min_related, self.config.max_related)
         cached_data = self._ensure_cached_data(model_registry)

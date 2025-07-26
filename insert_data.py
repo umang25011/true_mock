@@ -13,13 +13,15 @@ from core.data_inserter import insert_all_tables, insert_single_table
 from core import TableModel
 
 def load_table_models() -> List[TableModel]:
-    """Load all available table models."""
+    """Load specific table models."""
     models = []
     models_dir = 'models'
     
-    # Import all table models
-    for filename in os.listdir(models_dir):
-        if filename.endswith('_table.py'):
+    # Only load employee and salary tables
+    target_tables = ['employee_table.py', 'salary_table.py']
+    
+    for filename in target_tables:
+        if os.path.exists(os.path.join(models_dir, filename)):
             module_name = filename[:-3]  # Remove .py
             module = importlib.import_module(f'models.{module_name}')
             
@@ -34,58 +36,47 @@ def load_table_models() -> List[TableModel]:
 
 def main():
     """Main entry point."""
-    parser = argparse.ArgumentParser(description='Insert generated data into database tables.')
-    parser.add_argument('--table', help='Specific table to populate (omit for all tables)')
-    parser.add_argument('--rows', type=int, help='Override number of rows to generate')
-    parser.add_argument('--batch-size', type=int, help='Override batch size for insertion')
-    args = parser.parse_args()
+    # Set up logging
+    logging.basicConfig(level=logging.INFO)
+    logger = logging.getLogger(__name__)
 
     # Set up database connection
     db_connector = DatabaseConnector()
     if not db_connector.connect():
-        print("Failed to connect to database")
+        logger.error("Failed to connect to database")
         return
 
     try:
-        if args.table:
-            # Find and insert single table
-            models = load_table_models()
-            table_model = next((m for m in models if m.get_table_name() == args.table.lower()), None)
-            
-            if not table_model:
-                print(f"Table model not found: {args.table}")
-                return
-            
-            # Override settings if provided
-            if args.rows:
-                table_model.rows_per_table = args.rows
-            if args.batch_size:
-                table_model.batch_size = args.batch_size
-            
-            success = insert_single_table(db_connector, table_model)
-            print(f"Table {args.table} insertion {'successful' if success else 'failed'}")
+        # Load employee and salary models
+        models = load_table_models()
         
+        # First insert employee data
+        employee_model = next((m for m in models if m.get_table_name() == 'employee'), None)
+        if employee_model:
+            logger.info("Inserting employee data...")
+            success = insert_single_table(db_connector, employee_model)
+            if not success:
+                logger.error("Failed to insert employee data")
+                return
+            logger.info("Successfully inserted employee data")
         else:
-            # Insert all tables
-            models = load_table_models()
+            logger.error("Employee model not found")
+            return
             
-            # Override settings if provided
-            if args.rows or args.batch_size:
-                for model in models:
-                    if args.rows:
-                        model.rows_per_table = args.rows
-                    if args.batch_size:
-                        model.batch_size = args.batch_size
-            
-            results = insert_all_tables(db_connector, models)
-            
-            # Print results
-            print("\nInsertion Results:")
-            for table, success in results.items():
-                print(f"{table}: {'Success' if success else 'Failed'}")
+        # Then insert salary data
+        salary_model = next((m for m in models if m.get_table_name() == 'salary'), None)
+        if salary_model:
+            logger.info("Inserting salary data...")
+            success = insert_single_table(db_connector, salary_model)
+            if not success:
+                logger.error("Failed to insert salary data")
+            else:
+                logger.info("Successfully inserted salary data")
+        else:
+            logger.error("Salary model not found")
 
     except Exception as e:
-        print(f"Error during data insertion: {str(e)}")
+        logger.error(f"Error during data insertion: {str(e)}")
     
     finally:
         db_connector.close()

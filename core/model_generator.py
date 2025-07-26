@@ -11,11 +11,18 @@ from faker import Faker
 from sqlalchemy import inspect
 from jinja2 import Environment, FileSystemLoader
 
+# Import base types first
+from .columns import Column
+# Then import specific column types
+from .columns import (
+    IntegerColumn, StringColumn, DateTimeColumn,
+    EmailColumn, NameColumn, PhoneColumn, ReferenceColumn
+)
+# Import relation types last to avoid circular imports
 from .relations import (
     RelationType, RelationConfig, Relation,
     OneToOneRelation, OneToManyRelation, ManyToOneRelation, ManyToManyRelation
 )
-from .columns import Column
 
 fake = Faker()
 
@@ -23,19 +30,20 @@ class ModelGenerator:
     """Generates Python table models from database tables."""
     
     COLUMN_TYPE_MAPPING = {
-        'integer': 'IntegerColumn',
-        'bigint': 'IntegerColumn',
-        'smallint': 'IntegerColumn',
-        'varchar': 'StringColumn',
-        'char': 'StringColumn',
-        'text': 'StringColumn',
-        'boolean': 'BooleanColumn',
-        'timestamp': 'DateTimeColumn',
-        'date': 'DateTimeColumn',
-        'time': 'DateTimeColumn',
-        'email': 'EmailColumn',
-        'name': 'NameColumn',
-        'phone': 'PhoneColumn'
+        'integer': 'integer',
+        'bigint': 'integer',
+        'smallint': 'integer',
+        'varchar': 'string',
+        'char': 'string',
+        'text': 'string',
+        'boolean': 'boolean',
+        'timestamp': 'datetime',
+        'date': 'datetime',
+        'time': 'datetime',
+        'email': 'email',
+        'name': 'name',
+        'phone': 'phone',
+        'enum': 'enum'
     }
 
     def __init__(self, db_ops):
@@ -75,24 +83,42 @@ class ModelGenerator:
                 return is_serial
         return False
 
-    def _get_column_type_and_args(
+    def _render_column(self, template_name: str, context: Dict[str, Any]) -> str:
+        """Render a column using its template."""
+        template = self.jinja_env.get_template(f'columns/{template_name}.jinja')
+        return template.render(**context)
+
+    def _get_enum_values(self, column_info: Dict[str, Any]) -> List[str]:
+        """Extract enum values from column info."""
+        type_str = str(column_info['type'])
+        if 'enum' not in type_str.lower():
+            return []
+        
+        # Extract values from enum type string (e.g., "ENUM('M', 'F')" -> ["'M'", "'F'"])
+        start = type_str.find('(')
+        end = type_str.rfind(')')
+        if start == -1 or end == -1:
+            return []
+        
+        values = type_str[start + 1:end].split(',')
+        return [v.strip() for v in values]
+
+    def _get_column_definition(
         self,
         table_name: str,
         column_name: str,
         column_info: Dict[str, Any]
-    ) -> Tuple[str, List[str]]:
-        """Get column type and arguments for template."""
+    ) -> str:
+        """Get column definition using templates."""
         name_lower = column_name.lower()
         type_lower = str(column_info['type']).lower()
-        args = []
+        context = {}
 
-        # Handle nullable
+        # Handle basic attributes
         if not column_info.get('nullable', True):
-            args.append('nullable=False')
-
-        # Handle unique constraint
+            context['nullable'] = 'False'
         if column_info.get('unique', False):
-            args.append('unique=True')
+            context['unique'] = 'True'
 
         # Check if this is a primary key and auto-incrementing
         is_primary = column_info.get('primary_key', False)
@@ -100,147 +126,99 @@ class ModelGenerator:
 
         # For auto-incrementing primary keys, skip value generation
         if is_primary and is_auto_increment:
-            return 'IntegerColumn', [
-                'nullable=False',
-                'skip_generation=True',  # New flag to skip value generation
-                'generator=None'  # No generator needed
-            ]
+            return self._render_column('integer', {
+                'nullable': 'False',
+                'skip_generation': 'True',
+                'generator': 'None'
+            })
         
-        # Handle other primary keys or ID columns that aren't auto-incrementing
-        elif 'id' in name_lower or 'key' in name_lower:
-            return 'IntegerColumn', [
-                'nullable=False',
-                'min_value=1',
-                'max_value=1000000',
-                'generator=lambda: random.randint(1, 1000000)'
-            ]
+        # Check if this is a foreign key
+        inspector = inspect(self.db_ops.db.get_engine())
+        schema = self.db_ops.db.get_schema()
+        foreign_keys = inspector.get_foreign_keys(table_name, schema=schema)
         
-        elif any(name in name_lower for name in ['first_name', 'firstname']):
-            return 'NameColumn', [
-                'nullable=False',  # Names should never be null
-                'name_type="first"',
-                f'max_length={column_info["type"].length if hasattr(column_info["type"], "length") else 50}',
-                'generator=lambda: fake.first_name()'
-            ]
+        # Find if this column is part of a foreign key
+        for fk in foreign_keys:
+            if column_name in fk['constrained_columns']:
+                return self._render_column('reference', {
+                    'nullable': 'False',
+                    'to_table': fk["referred_table"],
+                    'to_column': fk["referred_columns"][0]
+                })
+
+        # Handle special column types based on name
+        if any(name in name_lower for name in ['first_name', 'firstname']):
+            return self._render_column('name', {
+                'nullable': 'False',
+                'name_type': 'first',
+                'max_length': getattr(column_info['type'], 'length', 50)
+            })
         
         elif any(name in name_lower for name in ['last_name', 'lastname']):
-            return 'NameColumn', [
-                'nullable=False',  # Names should never be null
-                'name_type="last"',
-                f'max_length={column_info["type"].length if hasattr(column_info["type"], "length") else 50}',
-                'generator=lambda: fake.last_name()'
-            ]
+            return self._render_column('name', {
+                'nullable': 'False',
+                'name_type': 'last',
+                'max_length': getattr(column_info['type'], 'length', 50)
+            })
         
         elif 'email' in name_lower:
-            return 'EmailColumn', [
-                *args,
-                'generator=lambda: fake.email()'
-            ]
+            return self._render_column('email', context)
         
         elif 'phone' in name_lower:
-            return 'PhoneColumn', [
-                *args,
-                'generator=lambda: fake.phone_number()'
-            ]
-        
-        elif 'gender' in name_lower:
-            return 'StringColumn', [
-                *args,
-                'max_length=1',
-                'generator=lambda: random.choice(["M", "F"])'
-            ]
-        
-        elif any(date_term in name_lower for date_term in ['birth', 'dob', 'birthdate']):
-            return 'DateTimeColumn', [
-                *args,
-                'generator=lambda: datetime.now() - timedelta(days=random.randint(365*20, 365*60))'
-            ]
-        
-        elif any(date_term in name_lower for date_term in ['hire_date', 'start_date', 'joined']):
-            return 'DateTimeColumn', [
-                *args,
-                'generator=lambda: datetime.now() - timedelta(days=random.randint(0, 365*10))'
-            ]
-        
-        elif 'salary' in name_lower:
-            return 'IntegerColumn', [
-                *args,
-                'min_value=30000',
-                'max_value=150000',
-                'generator=lambda: random.randint(30000, 150000)'
-            ]
-        
-        elif 'age' in name_lower:
-            return 'IntegerColumn', [
-                *args,
-                'min_value=18',
-                'max_value=100',
-                'generator=lambda: random.randint(18, 100)'
-            ]
-        
-        elif 'description' in name_lower or 'comment' in name_lower:
-            return 'StringColumn', [
-                *args,
-                'max_length=500',
-                'generator=lambda: fake.text(max_nb_chars=500)'
-            ]
-        
-        elif 'url' in name_lower or 'website' in name_lower:
-            return 'StringColumn', [
-                *args,
-                'generator=lambda: fake.url()'
-            ]
-        
-        elif 'address' in name_lower:
-            return 'StringColumn', [
-                *args,
-                'generator=lambda: fake.address()'
-            ]
-        
-        elif 'city' in name_lower:
-            return 'StringColumn', [
-                *args,
-                'generator=lambda: fake.city()'
-            ]
-        
-        elif 'country' in name_lower:
-            return 'StringColumn', [
-                *args,
-                'generator=lambda: fake.country()'
-            ]
-        
-        elif 'postal' in name_lower or 'zip' in name_lower:
-            return 'StringColumn', [
-                *args,
-                'generator=lambda: fake.postcode()'
-            ]
+            return self._render_column('phone', context)
         
         # Handle basic types
-        for db_type, column_type in self.COLUMN_TYPE_MAPPING.items():
-            if db_type in type_lower:
-                if 'char' in db_type:
-                    max_length = column_info["type"].length if hasattr(column_info["type"], "length") else 50
-                    args.extend([
-                        f'max_length={max_length}',
-                        f'generator=lambda: fake.text(max_nb_chars={max_length})'
-                    ])
-                elif 'int' in db_type:
-                    args.extend([
-                        'min_value=1',
-                        'max_value=1000000',
-                        'generator=lambda: random.randint(1, 1000000)'
-                    ])
-                elif 'bool' in db_type:
-                    args.append('generator=lambda: random.choice([True, False])')
-                elif 'date' in db_type or 'time' in db_type:
-                    args.append('generator=lambda: fake.date_time_this_decade()')
-                return column_type, args
+        template_name = self.COLUMN_TYPE_MAPPING.get(
+            next((t for t in self.COLUMN_TYPE_MAPPING if t in type_lower), 'string')
+        )
         
-        # Default to string with text generator
-        return 'StringColumn', [
-            *args,
-            'generator=lambda: fake.text(max_nb_chars=50)'
-        ]
+        # Add type-specific context
+        if template_name == 'string':
+            context['max_length'] = getattr(column_info['type'], 'length', 50)
+            if 'char(' in type_lower and not 'var' in type_lower:
+                context['generator'] = f'lambda: "".join(random.choices("ABCDEFGHIJKLMNOPQRSTUVWXYZ", k={context["max_length"]}))'
+        
+        elif template_name == 'integer':
+            if 'id' in name_lower or 'key' in name_lower:
+                context.update({
+                    'nullable': 'False',
+                    'min_value': 1,
+                    'max_value': 1000000
+                })
+            elif 'salary' in name_lower:
+                context.update({
+                    'min_value': 30000,
+                    'max_value': 150000
+                })
+            elif 'age' in name_lower:
+                context.update({
+                    'min_value': 18,
+                    'max_value': 100
+                })
+            else:
+                context.update({
+                    'min_value': 1,
+                    'max_value': 1000000
+                })
+        
+        elif template_name == 'datetime':
+            if any(term in name_lower for term in ['birth', 'dob', 'birthdate']):
+                context['generator'] = 'lambda: datetime.now() - timedelta(days=random.randint(365*20, 365*60))'
+            elif any(term in name_lower for term in ['hire', 'start', 'join']):
+                context['generator'] = 'lambda: datetime.now() - timedelta(days=random.randint(0, 365*10))'
+            elif any(term in name_lower for term in ['end', 'finish', 'complete']):
+                context['generator'] = 'lambda: datetime.now() + timedelta(days=random.randint(0, 365*2))'
+            else:
+                context['generator'] = 'lambda: fake.date_time_this_decade()'
+        
+        elif template_name == 'enum':
+            enum_values = self._get_enum_values(column_info)
+            if enum_values:
+                context['choices'] = enum_values
+            elif 'gender' in name_lower:
+                context['choices'] = ["'M'", "'F'"]
+        
+        return self._render_column(template_name, context)
 
     def _detect_relationship_type(
         self, 
@@ -283,73 +261,12 @@ class ModelGenerator:
 
     def _analyze_relationships(self, table_name: str) -> List[Relation]:
         """Analyze and return all relationships for a table."""
-        relationships = []
-        inspector = inspect(self.db_ops.db.get_engine())
-        schema = self.db_ops.db.get_schema()
-        
-        foreign_keys = inspector.get_foreign_keys(table_name, schema=schema)
-        
-        for fk in foreign_keys:
-            rel_type = self._detect_relationship_type(inspector, table_name, fk, schema)
-            config = RelationConfig()  # Use default config with auto_generate=True
-            
-            # Create appropriate relation instance based on type
-            if rel_type == RelationType.ONE_TO_ONE:
-                relation = OneToOneRelation(
-                    from_table=table_name,
-                    to_table=fk['referred_table'],
-                    from_column=fk['constrained_columns'][0],
-                    to_column=fk['referred_columns'][0],
-                    config=config
-                )
-            elif rel_type == RelationType.MANY_TO_ONE:
-                relation = ManyToOneRelation(
-                    from_table=table_name,
-                    to_table=fk['referred_table'],
-                    from_column=fk['constrained_columns'][0],
-                    to_column=fk['referred_columns'][0],
-                    config=config
-                )
-            elif rel_type == RelationType.ONE_TO_MANY:
-                relation = OneToManyRelation(
-                    from_table=table_name,
-                    to_table=fk['referred_table'],
-                    from_column=fk['constrained_columns'][0],
-                    to_column=fk['referred_columns'][0],
-                    config=config
-                )
-            elif rel_type == RelationType.MANY_TO_MANY:
-                relation = ManyToManyRelation(
-                    from_table=table_name,
-                    to_table=fk['referred_table'],
-                    junction_table=table_name,  # Current table is the junction
-                    from_column=fk['constrained_columns'][0],
-                    to_column=fk['referred_columns'][0],
-                    config=config
-                )
-            
-            relationships.append(relation)
-        
-        return relationships
-
-    def _get_column_definition(
-        self,
-        table_name: str,
-        column_name: str,
-        column_info: Dict[str, Any]
-    ) -> Column:
-        """Get column definition for template."""
-        column_type, args = self._get_column_type_and_args(table_name, column_name, column_info)
-        return Column(
-            name=column_name,
-            type=column_type,
-            args=args
-        )
+        # We no longer need this since relationships are handled by RelationColumn
+        return []
 
     def generate_model_code(self, table_name: str) -> str:
         """Generate Python code for a table model."""
         schema = self.db_ops.get_table_schema(table_name)
-        relationships = self._analyze_relationships(table_name)
         class_name = inflection.camelize(table_name) + 'Table'
         
         # Track needed imports
@@ -357,36 +274,30 @@ class ModelGenerator:
             'datetime': set(),
             'random': False,
             'faker': False,
-            'core': set(),
-            'relations': set()
+            'core': set()
         }
         
         # Generate column definitions
         columns = []
         for col in schema['columns']:
-            column_type, args = self._get_column_type_and_args(table_name, col['name'], col)
+            column_def = self._get_column_definition(table_name, col['name'], col)
             columns.append({
                 'name': col['name'],
-                'type': column_type,
-                'args': args
+                'definition': column_def
             })
             
-            # Track imports based on column types and generators
-            imports['core'].add(column_type)
-            
-            # Check for specific imports needed
-            if any('datetime' in arg or 'timedelta' in arg for arg in args):
-                imports['datetime'].update(['datetime', 'timedelta'])
-            if any('random.' in arg for arg in args):
+            # Track imports based on column types
+            if 'datetime' in column_def:
+                imports['datetime'].add('datetime')
+            if 'timedelta' in column_def:
+                imports['datetime'].add('timedelta')
+            if 'random.' in column_def:
                 imports['random'] = True
-            if any('fake.' in arg for arg in args):
+            if 'fake.' in column_def:
                 imports['faker'] = True
-        
-        # Add relation imports if needed
-        if relationships:
-            imports['relations'].update(['Relation', 'RelationConfig'])
-            for rel in relationships:
-                imports['relations'].add(rel.__class__.__name__)
+            for col_type in ['Integer', 'String', 'DateTime', 'Email', 'Name', 'Phone', 'Reference']:
+                if f'{col_type}Column' in column_def:
+                    imports['core'].add(f'{col_type}Column')
         
         # Render template
         template = self.jinja_env.get_template('model.py.jinja')
@@ -394,8 +305,7 @@ class ModelGenerator:
             table_name=table_name,
             class_name=class_name,
             imports=imports,
-            columns=columns,
-            relations=relationships
+            columns=columns
         )
     
     def save_model(self, table_name: str) -> str:

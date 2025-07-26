@@ -3,7 +3,7 @@ Database insertion handler for generated data.
 """
 
 import logging
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Set
 import time
 from datetime import datetime
 from sqlalchemy import text
@@ -89,6 +89,9 @@ class DataInserter:
         total_rows = table_model.rows_per_table
         batch_size = table_model.batch_size
         
+        # Set database connector
+        table_model.db_connector = self.db_connector
+        
         self.logger.info(f"Starting data insertion for table {table_name}")
         start_time = time.time()
         
@@ -121,12 +124,54 @@ class BatchInserter:
         self.inserter = DataInserter(db_connector)
         self.logger = logging.getLogger(__name__)
 
+    def _get_dependencies(self, table: TableModel) -> Set[str]:
+        """Get set of table names this table depends on."""
+        deps = set()
+        for column in table.columns.values():
+            if hasattr(column, 'to_table'):
+                deps.add(column.to_table)
+        return deps
+
+    def _sort_tables(self, tables: List[TableModel]) -> List[TableModel]:
+        """Sort tables by dependencies (topological sort)."""
+        # Create dependency graph
+        graph = {table.get_table_name(): self._get_dependencies(table) for table in tables}
+        table_map = {table.get_table_name(): table for table in tables}
+        
+        # Track visited and sorted tables
+        visited = set()
+        temp_mark = set()
+        sorted_tables = []
+        
+        def visit(table_name: str):
+            if table_name in temp_mark:
+                raise ValueError(f"Circular dependency detected involving {table_name}")
+            if table_name not in visited:
+                temp_mark.add(table_name)
+                for dep in graph[table_name]:
+                    if dep in graph:  # Only visit if it's a table we're inserting
+                        visit(dep)
+                temp_mark.remove(table_name)
+                visited.add(table_name)
+                sorted_tables.insert(0, table_map[table_name])
+        
+        # Visit all tables
+        for table_name in graph:
+            if table_name not in visited:
+                visit(table_name)
+        
+        return sorted_tables
+
     def insert_tables(self, tables: List[TableModel]) -> Dict[str, bool]:
-        """Insert data for multiple tables."""
+        """Insert data for multiple tables in dependency order."""
         results = {}
         
         try:
-            for table in tables:
+            # Sort tables by dependencies
+            sorted_tables = self._sort_tables(tables)
+            
+            # Insert in order
+            for table in sorted_tables:
                 table_name = table.get_table_name()
                 success = self.inserter.insert_table_data(table)
                 results[table_name] = success

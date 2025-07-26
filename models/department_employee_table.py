@@ -3,14 +3,12 @@ Table model for department_employee table.
 Generated automatically by sql_data_generator.
 """
 
-import random
 from faker import Faker
 
 fake = Faker()
 
 from core import TableModel
-from core import (DateTimeColumn, IntegerColumn)
-from core.relations import (Relation, RelationConfig, ManyToOneRelation)
+from core import (ReferenceColumn, DateTimeColumn)
 
 class DepartmentEmployeeTable(TableModel):
     """Model for department_employee table."""
@@ -18,54 +16,18 @@ class DepartmentEmployeeTable(TableModel):
     def _setup_columns(self):
         """Define the table columns."""
         self.columns = {
-            'employee_id': IntegerColumn(
-                nullable=False,
-                min_value=1,
-                max_value=1000000,
-                generator=lambda: random.randint(1, 1000000),
-            ),
-            'department_id': IntegerColumn(
-                nullable=False,
-                min_value=1,
-                max_value=1000000,
-                generator=lambda: random.randint(1, 1000000),
-            ),
+            'employee_id': ReferenceColumn(
+nullable=False,    to_table="employee",
+    to_column="id",
+    db_connector=self.db_connector
+) ,
+            'department_id': ReferenceColumn(
+nullable=False,    to_table="department",
+    to_column="id",
+    db_connector=self.db_connector
+) ,
             'from_date': DateTimeColumn(
-                nullable=False,
-                generator=lambda: fake.date_time_this_decade(),
-            ),
+nullable=False,generator=lambda: fake.date_time_this_decade(),) ,
             'to_date': DateTimeColumn(
-                nullable=False,
-                generator=lambda: fake.date_time_this_decade(),
-            ),
+nullable=False,generator=lambda: fake.date_time_this_decade(),) 
         }
-
-    def _setup_relations(self):
-        """Define the table relationships."""
-        self.relations.append(
-            ManyToOneRelation(
-                from_table="department_employee",
-                to_table="employee",
-                from_column="employee_id",
-                to_column="id",
-                config=RelationConfig(
-                    min_related=1,
-                    max_related=5,
-                    pool_size=10
-                )
-            )
-        )
-        self.relations.append(
-            ManyToOneRelation(
-                from_table="department_employee",
-                to_table="department",
-                from_column="department_id",
-                to_column="id",
-                config=RelationConfig(
-                    min_related=1,
-                    max_related=5,
-                    pool_size=10
-                )
-            )
-        )
- 

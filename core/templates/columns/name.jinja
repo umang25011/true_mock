@@ -1,0 +1,6 @@
+NameColumn(
+    {% if nullable is defined %}nullable={{ nullable }},{% endif %}
+    {% if unique is defined %}unique={{ unique }},{% endif %}
+    {% if max_length is defined %}max_length={{ max_length }},{% endif %}
+    name_type="{{ name_type }}"
+) 

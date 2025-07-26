@@ -1,72 +1,92 @@
 """
-Base table model for data generation.
+Base table model that handles data generation for a database table.
 """
 
 import json
 import os
 from typing import Dict, List, Any, Optional
-import logging
-from .relations import ModelRegistry, Relation
+from .columns import Column
 
 class TableModel:
-    """Base class for table models."""
+    """
+    Base class for table models.
     
-    def __init__(self):
-        """Initialize table model."""
-        self.columns: Dict[str, Any] = {}
-        self.relations: List[Relation] = []
-        self.model_registry: Optional[ModelRegistry] = None
-        self._setup_columns()
-        self._setup_relations()
+    Each table model represents a database table and knows how to:
+    1. Define its columns and their data types
+    2. Generate realistic data for those columns
+    3. Handle foreign key relationships through ReferenceColumns
+    """
     
-    def _setup_columns(self):
+    def __init__(
+        self,
+        rows_per_table: int = None,
+        batch_size: int = None,
+        db_connector = None,
+        config_file: str = None
+    ):
         """
-        Override this method to define table columns.
-        Example:
+        Initialize a table model.
+        
+        Args:
+            rows_per_table: Number of rows to generate (default from config)
+            batch_size: Number of rows per batch (default from config)
+            db_connector: Database connector for foreign key handling
+            config_file: Path to config file (default is config.json)
+        """
+        # Core attributes
+        self.columns: Dict[str, Column] = {}
+        self.db_connector = db_connector
+        
+        # Load generation settings
+        self._load_config(config_file)
+        self.rows_per_table = rows_per_table or self.config['data_generation']['default_rows_per_table']
+        self.batch_size = batch_size or self.config['data_generation']['default_batch_size']
+        
+        # Set up the model
+        self._setup_columns()
+        self._setup_foreign_keys()
+    
+    def _load_config(self, config_file: Optional[str] = None) -> None:
+        """Load configuration from file."""
+        if not config_file:
+            config_file = os.path.join(os.path.dirname(__file__), 'config.json')
+        
+        with open(config_file, 'r') as f:
+            self.config = json.load(f)
+    
+    def _setup_columns(self) -> None:
+        """
+        Define the table columns.
+        
+        Override this method in subclasses to define columns like:
             self.columns = {
                 'id': IntegerColumn(nullable=False),
-                'name': StringColumn(max_length=100)
+                'name': StringColumn(max_length=100),
+                'email': EmailColumn()
             }
         """
         pass
-
-    def _setup_relations(self):
-        """
-        Override this method to define table relationships.
-        Example:
-            self.relations.append(
-                ManyToOneRelation(
-                    from_table="employee",
-                    to_table="department",
-                    from_column="dept_id",
-                    to_column="id"
-                )
-            )
-        """
-        pass
     
-    def set_model_registry(self, registry: ModelRegistry):
-        """Set the model registry for relationship handling."""
-        self.model_registry = registry
+    def _setup_foreign_keys(self) -> None:
+        """Set up foreign key columns with database connector."""
+        for column in self.columns.values():
+            if hasattr(column, 'db_connector'):
+                column.db_connector = self.db_connector
     
     def generate_row(self) -> Dict[str, Any]:
         """Generate a single row of data."""
-        row = {}
-        
-        # First generate values for non-relation columns
-        for name, column in self.columns.items():
-            if not any(name == rel.from_column for rel in self.relations):
-                row[name] = column.generate()
-        
-        # Then handle relationships to ensure referenced data exists
-        if self.model_registry:
-            for relation in self.relations:
-                row[relation.from_column] = relation.generate_related_data(self.model_registry)
-        
-        return row
+        return {
+            name: column.generate()
+            for name, column in self.columns.items()
+        }
     
-    def generate_rows(self, count: int = None) -> List[Dict[str, Any]]:
-        """Generate multiple rows of data."""
+    def generate_rows(self, count: Optional[int] = None) -> List[Dict[str, Any]]:
+        """
+        Generate multiple rows of data.
+        
+        Args:
+            count: Number of rows to generate (default is rows_per_table)
+        """
         count = count or self.rows_per_table
         return [self.generate_row() for _ in range(count)]
     
@@ -79,26 +99,25 @@ class TableModel:
         return list(self.columns.keys())
     
     def __str__(self) -> str:
-        """String representation showing table structure."""
-        lines = [f"Table Model: {self.__class__.__name__}"]
-        lines.append("-" * 40)
+        """Human-readable representation of the table model."""
+        lines = [
+            f"Table Model: {self.__class__.__name__}",
+            "-" * 40,
+            "\nColumns:"
+        ]
         
-        # Show columns
-        lines.append("\nColumns:")
+        # Show column details
         for name, column in self.columns.items():
             column_type = column.__class__.__name__
             nullable = "NULL" if column.nullable else "NOT NULL"
             unique = "UNIQUE" if getattr(column, 'unique', False) else ""
             lines.append(f"{name}: {column_type} {nullable} {unique}")
         
-        # Show relationships
-        if self.relations:
-            lines.append("\nRelationships:")
-            for rel in self.relations:
-                rel_type = rel.__class__.__name__.replace('Relation', '')
-                lines.append(
-                    f"{rel.from_column} -> {rel.to_table}.{rel.to_column} "
-                    f"({rel_type})"
-                )
+        # Show settings
+        lines.extend([
+            "\nGeneration Settings:",
+            f"Rows per table: {self.rows_per_table}",
+            f"Batch size: {self.batch_size}"
+        ])
         
         return "\n".join(lines) 

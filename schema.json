@@ -1,0 +1,630 @@
+{
+  "metadata": {
+    "name": "employees",
+    "dialect": "postgresql",
+    "version": "(17, 5)",
+    "generated_at": "2025-07-26T10:00:28.984045"
+  },
+  "tables": {
+    "employee": {
+      "name": "employee",
+      "schema": "employees",
+      "columns": [
+        {
+          "name": "id",
+          "type": {
+            "python": "BIGINT",
+            "sql": "BIGINT",
+            "params": {}
+          },
+          "nullable": false,
+          "default": "nextval('employees.id_employee_seq'::regclass)",
+          "primary_key": false,
+          "unique": false,
+          "auto_increment": true,
+          "comment": null,
+          "references": [],
+          "referenced_by": [
+            {
+              "table": "department_employee",
+              "column": "employee_id",
+              "name": "dept_emp_ibfk_1"
+            },
+            {
+              "table": "department_manager",
+              "column": "employee_id",
+              "name": "dept_manager_ibfk_1"
+            },
+            {
+              "table": "salary",
+              "column": "employee_id",
+              "name": "salaries_ibfk_1"
+            },
+            {
+              "table": "title",
+              "column": "employee_id",
+              "name": "titles_ibfk_1"
+            }
+          ]
+        },
+        {
+          "name": "birth_date",
+          "type": {
+            "python": "DATE",
+            "sql": "DATE",
+            "params": {}
+          },
+          "nullable": false,
+          "default": null,
+          "primary_key": false,
+          "unique": false,
+          "auto_increment": false,
+          "comment": null,
+          "references": [],
+          "referenced_by": []
+        },
+        {
+          "name": "first_name",
+          "type": {
+            "python": "VARCHAR",
+            "sql": "VARCHAR(14)",
+            "params": {
+              "length": 14
+            }
+          },
+          "nullable": false,
+          "default": null,
+          "primary_key": false,
+          "unique": false,
+          "auto_increment": false,
+          "comment": null,
+          "references": [],
+          "referenced_by": []
+        },
+        {
+          "name": "last_name",
+          "type": {
+            "python": "VARCHAR",
+            "sql": "VARCHAR(16)",
+            "params": {
+              "length": 16
+            }
+          },
+          "nullable": false,
+          "default": null,
+          "primary_key": false,
+          "unique": false,
+          "auto_increment": false,
+          "comment": null,
+          "references": [],
+          "referenced_by": []
+        },
+        {
+          "name": "gender",
+          "type": {
+            "python": "ENUM",
+            "sql": "VARCHAR(1)",
+            "params": {
+              "length": 1
+            }
+          },
+          "nullable": false,
+          "default": null,
+          "primary_key": false,
+          "unique": false,
+          "auto_increment": false,
+          "comment": null,
+          "references": [],
+          "referenced_by": []
+        },
+        {
+          "name": "hire_date",
+          "type": {
+            "python": "DATE",
+            "sql": "DATE",
+            "params": {}
+          },
+          "nullable": false,
+          "default": null,
+          "primary_key": false,
+          "unique": false,
+          "auto_increment": false,
+          "comment": null,
+          "references": [],
+          "referenced_by": []
+        }
+      ],
+      "indexes": [],
+      "constraints": {
+        "unique": [],
+        "check": [],
+        "primary_key": {
+          "name": "idx_16988_primary",
+          "columns": [
+            "id"
+          ]
+        }
+      },
+      "comment": null
+    },
+    "department_employee": {
+      "name": "department_employee",
+      "schema": "employees",
+      "columns": [
+        {
+          "name": "employee_id",
+          "type": {
+            "python": "BIGINT",
+            "sql": "BIGINT",
+            "params": {}
+          },
+          "nullable": false,
+          "default": null,
+          "primary_key": false,
+          "unique": false,
+          "auto_increment": false,
+          "comment": null,
+          "references": [
+            {
+              "table": "employee",
+              "column": "id",
+              "name": "dept_emp_ibfk_1",
+              "onupdate": null,
+              "ondelete": null
+            }
+          ],
+          "referenced_by": []
+        },
+        {
+          "name": "department_id",
+          "type": {
+            "python": "CHAR",
+            "sql": "CHAR(4)",
+            "params": {
+              "length": 4
+            }
+          },
+          "nullable": false,
+          "default": null,
+          "primary_key": false,
+          "unique": false,
+          "auto_increment": false,
+          "comment": null,
+          "references": [
+            {
+              "table": "department",
+              "column": "id",
+              "name": "dept_emp_ibfk_2",
+              "onupdate": null,
+              "ondelete": null
+            }
+          ],
+          "referenced_by": []
+        },
+        {
+          "name": "from_date",
+          "type": {
+            "python": "DATE",
+            "sql": "DATE",
+            "params": {}
+          },
+          "nullable": false,
+          "default": null,
+          "primary_key": false,
+          "unique": false,
+          "auto_increment": false,
+          "comment": null,
+          "references": [],
+          "referenced_by": []
+        },
+        {
+          "name": "to_date",
+          "type": {
+            "python": "DATE",
+            "sql": "DATE",
+            "params": {}
+          },
+          "nullable": false,
+          "default": null,
+          "primary_key": false,
+          "unique": false,
+          "auto_increment": false,
+          "comment": null,
+          "references": [],
+          "referenced_by": []
+        }
+      ],
+      "indexes": [
+        {
+          "name": "idx_16982_dept_no",
+          "columns": [
+            "department_id"
+          ],
+          "unique": false,
+          "type": "btree"
+        }
+      ],
+      "constraints": {
+        "unique": [],
+        "check": [],
+        "primary_key": {
+          "name": "idx_16982_primary",
+          "columns": [
+            "employee_id",
+            "department_id"
+          ]
+        }
+      },
+      "comment": null
+    },
+    "department": {
+      "name": "department",
+      "schema": "employees",
+      "columns": [
+        {
+          "name": "id",
+          "type": {
+            "python": "CHAR",
+            "sql": "CHAR(4)",
+            "params": {
+              "length": 4
+            }
+          },
+          "nullable": false,
+          "default": null,
+          "primary_key": false,
+          "unique": false,
+          "auto_increment": false,
+          "comment": null,
+          "references": [],
+          "referenced_by": [
+            {
+              "table": "department_employee",
+              "column": "department_id",
+              "name": "dept_emp_ibfk_2"
+            },
+            {
+              "table": "department_manager",
+              "column": "department_id",
+              "name": "dept_manager_ibfk_2"
+            }
+          ]
+        },
+        {
+          "name": "dept_name",
+          "type": {
+            "python": "VARCHAR",
+            "sql": "VARCHAR(40)",
+            "params": {
+              "length": 40
+            }
+          },
+          "nullable": false,
+          "default": null,
+          "primary_key": false,
+          "unique": true,
+          "auto_increment": false,
+          "comment": null,
+          "references": [],
+          "referenced_by": []
+        }
+      ],
+      "indexes": [
+        {
+          "name": "idx_16979_dept_name",
+          "columns": [
+            "dept_name"
+          ],
+          "unique": true,
+          "type": "btree"
+        }
+      ],
+      "constraints": {
+        "unique": [],
+        "check": [],
+        "primary_key": {
+          "name": "idx_16979_primary",
+          "columns": [
+            "id"
+          ]
+        }
+      },
+      "comment": null
+    },
+    "department_manager": {
+      "name": "department_manager",
+      "schema": "employees",
+      "columns": [
+        {
+          "name": "employee_id",
+          "type": {
+            "python": "BIGINT",
+            "sql": "BIGINT",
+            "params": {}
+          },
+          "nullable": false,
+          "default": null,
+          "primary_key": false,
+          "unique": false,
+          "auto_increment": false,
+          "comment": null,
+          "references": [
+            {
+              "table": "employee",
+              "column": "id",
+              "name": "dept_manager_ibfk_1",
+              "onupdate": null,
+              "ondelete": null
+            }
+          ],
+          "referenced_by": []
+        },
+        {
+          "name": "department_id",
+          "type": {
+            "python": "CHAR",
+            "sql": "CHAR(4)",
+            "params": {
+              "length": 4
+            }
+          },
+          "nullable": false,
+          "default": null,
+          "primary_key": false,
+          "unique": false,
+          "auto_increment": false,
+          "comment": null,
+          "references": [
+            {
+              "table": "department",
+              "column": "id",
+              "name": "dept_manager_ibfk_2",
+              "onupdate": null,
+              "ondelete": null
+            }
+          ],
+          "referenced_by": []
+        },
+        {
+          "name": "from_date",
+          "type": {
+            "python": "DATE",
+            "sql": "DATE",
+            "params": {}
+          },
+          "nullable": false,
+          "default": null,
+          "primary_key": false,
+          "unique": false,
+          "auto_increment": false,
+          "comment": null,
+          "references": [],
+          "referenced_by": []
+        },
+        {
+          "name": "to_date",
+          "type": {
+            "python": "DATE",
+            "sql": "DATE",
+            "params": {}
+          },
+          "nullable": false,
+          "default": null,
+          "primary_key": false,
+          "unique": false,
+          "auto_increment": false,
+          "comment": null,
+          "references": [],
+          "referenced_by": []
+        }
+      ],
+      "indexes": [
+        {
+          "name": "idx_16985_dept_no",
+          "columns": [
+            "department_id"
+          ],
+          "unique": false,
+          "type": "btree"
+        }
+      ],
+      "constraints": {
+        "unique": [],
+        "check": [],
+        "primary_key": {
+          "name": "idx_16985_primary",
+          "columns": [
+            "employee_id",
+            "department_id"
+          ]
+        }
+      },
+      "comment": null
+    },
+    "salary": {
+      "name": "salary",
+      "schema": "employees",
+      "columns": [
+        {
+          "name": "employee_id",
+          "type": {
+            "python": "BIGINT",
+            "sql": "BIGINT",
+            "params": {}
+          },
+          "nullable": false,
+          "default": null,
+          "primary_key": false,
+          "unique": false,
+          "auto_increment": false,
+          "comment": null,
+          "references": [
+            {
+              "table": "employee",
+              "column": "id",
+              "name": "salaries_ibfk_1",
+              "onupdate": null,
+              "ondelete": null
+            }
+          ],
+          "referenced_by": []
+        },
+        {
+          "name": "amount",
+          "type": {
+            "python": "BIGINT",
+            "sql": "BIGINT",
+            "params": {}
+          },
+          "nullable": false,
+          "default": null,
+          "primary_key": false,
+          "unique": false,
+          "auto_increment": false,
+          "comment": null,
+          "references": [],
+          "referenced_by": []
+        },
+        {
+          "name": "from_date",
+          "type": {
+            "python": "DATE",
+            "sql": "DATE",
+            "params": {}
+          },
+          "nullable": false,
+          "default": null,
+          "primary_key": false,
+          "unique": false,
+          "auto_increment": false,
+          "comment": null,
+          "references": [],
+          "referenced_by": []
+        },
+        {
+          "name": "to_date",
+          "type": {
+            "python": "DATE",
+            "sql": "DATE",
+            "params": {}
+          },
+          "nullable": false,
+          "default": null,
+          "primary_key": false,
+          "unique": false,
+          "auto_increment": false,
+          "comment": null,
+          "references": [],
+          "referenced_by": []
+        }
+      ],
+      "indexes": [],
+      "constraints": {
+        "unique": [],
+        "check": [],
+        "primary_key": {
+          "name": "idx_16991_primary",
+          "columns": [
+            "employee_id",
+            "from_date"
+          ]
+        }
+      },
+      "comment": null
+    },
+    "title": {
+      "name": "title",
+      "schema": "employees",
+      "columns": [
+        {
+          "name": "employee_id",
+          "type": {
+            "python": "BIGINT",
+            "sql": "BIGINT",
+            "params": {}
+          },
+          "nullable": false,
+          "default": null,
+          "primary_key": false,
+          "unique": false,
+          "auto_increment": false,
+          "comment": null,
+          "references": [
+            {
+              "table": "employee",
+              "column": "id",
+              "name": "titles_ibfk_1",
+              "onupdate": null,
+              "ondelete": null
+            }
+          ],
+          "referenced_by": []
+        },
+        {
+          "name": "title",
+          "type": {
+            "python": "VARCHAR",
+            "sql": "VARCHAR(50)",
+            "params": {
+              "length": 50
+            }
+          },
+          "nullable": false,
+          "default": null,
+          "primary_key": false,
+          "unique": false,
+          "auto_increment": false,
+          "comment": null,
+          "references": [],
+          "referenced_by": []
+        },
+        {
+          "name": "from_date",
+          "type": {
+            "python": "DATE",
+            "sql": "DATE",
+            "params": {}
+          },
+          "nullable": false,
+          "default": null,
+          "primary_key": false,
+          "unique": false,
+          "auto_increment": false,
+          "comment": null,
+          "references": [],
+          "referenced_by": []
+        },
+        {
+          "name": "to_date",
+          "type": {
+            "python": "DATE",
+            "sql": "DATE",
+            "params": {}
+          },
+          "nullable": true,
+          "default": null,
+          "primary_key": false,
+          "unique": false,
+          "auto_increment": false,
+          "comment": null,
+          "references": [],
+          "referenced_by": []
+        }
+      ],
+      "indexes": [],
+      "constraints": {
+        "unique": [],
+        "check": [],
+        "primary_key": {
+          "name": "idx_16994_primary",
+          "columns": [
+            "employee_id",
+            "title",
+            "from_date"
+          ]
+        }
+      },
+      "comment": null
+    }
+  }
+}

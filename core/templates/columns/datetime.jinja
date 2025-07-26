@@ -1,0 +1,6 @@
+DateTimeColumn(
+    {% if nullable is defined %}nullable={{ nullable }},{% endif %}
+    {% if unique is defined %}unique={{ unique }},{% endif %}
+    {% if generator is defined %}generator={{ generator }},{% endif %}
+    {% if default is defined %}default={{ default }}{% endif %}
+) 

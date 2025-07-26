@@ -1,0 +1,12 @@
+---
+description: 
+globs: 
+alwaysApply: false
+---
+1. Don't Update table model files in models folder. These are auto-generated files, and shouldn't be updated directly. For any issues in them, update the model_generator.py file. 
+
+2. For hard-coded configs, put it in config.json file, and read it from there. 
+
+3. Use existing code like database_connectors, columns, base_table, relations etc before generating new code. 
+
+4. Make sure all the imports are correctly done. 

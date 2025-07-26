@@ -1,0 +1,8 @@
+IntegerColumn(
+    {% if nullable is defined %}nullable={{ nullable }},{% endif %}
+    {% if unique is defined %}unique={{ unique }},{% endif %}
+    {% if min_value is defined %}min_value={{ min_value }},{% endif %}
+    {% if max_value is defined %}max_value={{ max_value }},{% endif %}
+    {% if generator is defined %}generator={{ generator }},{% endif %}
+    {% if skip_generation is defined %}skip_generation={{ skip_generation }},{% endif %}
+) 
