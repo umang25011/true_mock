@@ -32,7 +32,7 @@ class Config(BaseModel):
 class DatabaseConnector:
     """Handles database connections."""
     
-    def __init__(self, config_path: str = "config.json"):
+    def __init__(self, config_path: str = "../config.json"):
         """Initialize the database connector with configuration."""
         # Get the directory of the current script
         script_dir = os.path.dirname(os.path.abspath(__file__))

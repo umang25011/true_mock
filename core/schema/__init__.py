@@ -1,18 +1,15 @@
 """
-Core package for database schema extraction and model generation.
+Schema package for database schema extraction and modeling.
 """
 
-from .schema.schema_model import (
+from .schema_model import (
     SchemaModel, SchemaMetadata, Table, Column, ColumnType,
     ColumnFlags, ForeignKey, Reference, Index, ModelConfig,
     Relationship
 )
-
-from .database.database_connector import DatabaseConnector
-from .database.db_operations import DatabaseOperations
+from .schema_extractor import SchemaExtractor
 
 __all__ = [
-    # Schema models
     'SchemaModel',
     'SchemaMetadata',
     'Table',
@@ -24,8 +21,5 @@ __all__ = [
     'Index',
     'ModelConfig',
     'Relationship',
-    
-    # Database
-    'DatabaseConnector',
-    'DatabaseOperations'
+    'SchemaExtractor'
 ] 

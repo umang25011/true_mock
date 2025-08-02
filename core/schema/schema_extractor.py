@@ -7,7 +7,7 @@ from typing import Dict, List, Any, Optional
 from sqlalchemy import inspect, text
 from datetime import datetime
 
-from schema_model import (
+from .schema_model import (
     SchemaModel, SchemaMetadata, Table, Column, ColumnType,
     ColumnFlags, ForeignKey, Reference, Index, ModelConfig,
     Relationship
@@ -403,23 +403,4 @@ class SchemaExtractor:
             table.relationships = self._analyze_relationships(table, schema_model)
 
         # Save to file
-        schema_model.save(output_file)
-
-if __name__ == "__main__":
-    from database_connector import DatabaseConnector
-    from db_operations import DatabaseOperations
-    
-    # Connect to database
-    connector = DatabaseConnector()
-    if connector.connect():
-        try:
-            db_ops = DatabaseOperations(connector)
-            extractor = SchemaExtractor(db_ops)
-            
-            # Extract schema to JSON
-            output_file = 'schema.json'
-            extractor.extract_schema(output_file)
-            print(f"\nSchema extracted to {output_file}")
-            
-        finally:
-            connector.close() 
+        schema_model.save(output_file) 
