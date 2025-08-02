@@ -1,31 +1,23 @@
 """
-Core package containing base classes and utilities.
+Core package for database schema extraction and model generation.
 """
 
-# Import base classes first
-from .base_table import TableModel
-
-# Import column types
-from .columns import (
-    Column,
-    IntegerColumn,
-    StringColumn,
-    DateTimeColumn,
-    EmailColumn,
-    NameColumn,
-    PhoneColumn,
-    ReferenceColumn
+from .schema_model import (
+    SchemaModel, SchemaMetadata, Table, Column, ColumnType,
+    ColumnFlags, ForeignKey, Reference, Index, ModelConfig,
+    Relationship
 )
 
-# Define what's available at package level
 __all__ = [
-    'TableModel',
+    'SchemaModel',
+    'SchemaMetadata',
+    'Table',
     'Column',
-    'IntegerColumn',
-    'StringColumn',
-    'DateTimeColumn',
-    'EmailColumn',
-    'NameColumn',
-    'PhoneColumn',
-    'ReferenceColumn'
+    'ColumnType',
+    'ColumnFlags',
+    'ForeignKey',
+    'Reference',
+    'Index',
+    'ModelConfig',
+    'Relationship'
 ] 
